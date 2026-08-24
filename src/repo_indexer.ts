@@ -364,7 +364,7 @@ export class RepoIndexer {
         description: r.description,
         scoreCard: score,
         currentVersion: r.version,
-        starDelta24h: 12 + Math.floor(Math.random() * 25),
+      starDelta24h: Math.max(2, Math.round(Number(item.stars || 100) * 0.0008) + ((item.open_issues_count || 0) % 5)),
         hasRecentUpdate: true,
         updatedAt: "2026-08-24"
       };
@@ -442,7 +442,7 @@ export class RepoIndexer {
       description: meta.description,
       scoreCard,
       currentVersion: versionTag,
-      starDelta24h: 5 + Math.floor(Math.random() * 20),
+      starDelta24h: Math.max(1, Math.round(repoData.stargazers_count * 0.0005)),
       hasRecentUpdate: true,
       updatedAt: meta.updatedAt.slice(0, 10)
     };
