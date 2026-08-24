@@ -1,0 +1,11 @@
+{
+  "name": "github-agent-studio",
+  "version": "1.0.0",
+  "description": "AI-Powered A-to-Z GitHub Repository Classifier, Deep Code Quality Evaluator & Forkability Recommender",
+  "type": "module",
+  "main": "server.ts",
+  "scripts": {
+    "start": "bun server.ts"
+  },
+  "dependencies": {}
+}
