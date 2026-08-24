@@ -110,19 +110,19 @@ const server = Bun.serve({
       return new Response(JSON.stringify(forks), { headers });
     }
 
-    // 5. Scan Security Shield (OpenSSF Scorecard style)
+    // 5. Scan Security Shield (Real OpenSSF Scorecard REST API)
     if (url.pathname === "/api/security/scan" && req.method === "GET") {
-      const repo = url.searchParams.get("repo") || "deepseek-ai/DeepSeek-R1";
-      const report = securityShield.scanSecurity(repo);
+      const repo = url.searchParams.get("repo") || "expressjs/express";
+      const report = await securityShield.scanSecurity(repo);
       return new Response(JSON.stringify(report), { headers });
     }
 
-    // 6. Execute SQL Query (MergeStat style)
+    // 6. Execute SQL Query (Real bun:sqlite C-Engine)
     if (url.pathname === "/api/sql/query" && req.method === "POST") {
       try {
         let body: any = {};
         try { body = await req.json(); } catch {}
-        const query = body.query || "SELECT * FROM catalog WHERE score >= 88 ORDER BY starDelta24h DESC";
+        const query = body.query || "SELECT name, stars, total_score, language FROM repos WHERE total_score >= 80 ORDER BY stars DESC";
         const result = sqlEngine.executeQuery(query, indexer.getCatalog());
         return new Response(JSON.stringify(result), { headers });
       } catch (e: any) {
