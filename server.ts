@@ -1,12 +1,15 @@
 #!/usr/bin/env bun
 /**
  * 🐙 GITHUB-AGENT STUDIO SERVER (v1.0.0)
- * Universal A-to-Z GitHub Repository Intelligence, Version Tracker & Daily Daemon
+ * Universal A-to-Z GitHub Repository Intelligence, Version Tracker & Active Fork Hunter
  */
 
 import { RepoIndexer } from "./src/repo_indexer";
 import { WikiGenerator } from "./src/wiki_generator";
 import { DailyCronScheduler } from "./src/daily_cron_scheduler";
+import { ForkHunter } from "./src/fork_hunter";
+import { SecurityShield } from "./src/security_shield";
+import { SQLQueryEngine } from "./src/sql_query_engine";
 import { GitHubInsightBenchmark } from "./src/competitor_benchmark";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -16,12 +19,17 @@ const PORT = Number(process.env.PORT) || 3011;
 const indexer = new RepoIndexer();
 const wikiGen = new WikiGenerator();
 const scheduler = new DailyCronScheduler(indexer);
+const forkHunter = new ForkHunter();
+const securityShield = new SecurityShield();
+const sqlEngine = new SQLQueryEngine();
 const benchmark = new GitHubInsightBenchmark();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
 console.log(`🔤 A-to-Z Universal Repository Catalog: Active (${indexer.getCatalog().length} Repos)`);
-console.log(`🔄 Version Delta & Release Tracker: Online`);
+console.log(`🌟 Active Fork Hunter Engine: Ready`);
+console.log(`🛡️ OpenSSF Security & Supply-Chain Shield: Online`);
+console.log(`🗄️ MergeStat-Style SQL Query Engine: Active`);
 console.log(`⏰ Daily 24-Hour Automated Crawler Daemon: Running`);
 console.log(`📖 Clean Textual Wiki Archive Generator: Online`);
 console.log(`======================================================\n`);
@@ -65,7 +73,7 @@ const server = Bun.serve({
         version: "1.0.0-githubagent",
         totalIndexed: indexer.getCatalog().length,
         daemon: "active-24h",
-        wikiGenerator: "active"
+        features: ["A-Z Index", "Fork Hunter", "Security Shield", "SQL Engine", "Wiki Generator"]
       }), { headers });
     }
 
@@ -95,7 +103,34 @@ const server = Bun.serve({
       }
     }
 
-    // 4. Daily Sync Telemetry & Manual Trigger
+    // 4. Hunt Active Community Forks
+    if (url.pathname === "/api/forks/hunt" && req.method === "GET") {
+      const repo = url.searchParams.get("repo") || "bytedance/ui-tars";
+      const forks = await forkHunter.huntActiveForks(repo);
+      return new Response(JSON.stringify(forks), { headers });
+    }
+
+    // 5. Scan Security Shield (OpenSSF Scorecard style)
+    if (url.pathname === "/api/security/scan" && req.method === "GET") {
+      const repo = url.searchParams.get("repo") || "deepseek-ai/DeepSeek-R1";
+      const report = securityShield.scanSecurity(repo);
+      return new Response(JSON.stringify(report), { headers });
+    }
+
+    // 6. Execute SQL Query (MergeStat style)
+    if (url.pathname === "/api/sql/query" && req.method === "POST") {
+      try {
+        let body: any = {};
+        try { body = await req.json(); } catch {}
+        const query = body.query || "SELECT * FROM catalog WHERE score >= 88 ORDER BY starDelta24h DESC";
+        const result = sqlEngine.executeQuery(query, indexer.getCatalog());
+        return new Response(JSON.stringify(result), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
+      }
+    }
+
+    // 7. Daily Sync Telemetry & Manual Trigger
     if (url.pathname === "/api/sync/telemetry" && req.method === "GET") {
       return new Response(JSON.stringify(scheduler.getTelemetry()), { headers });
     }
@@ -109,7 +144,7 @@ const server = Bun.serve({
       return new Response(JSON.stringify(indexer.versionTracker.getAllDeltas()), { headers });
     }
 
-    // 5. Generate Clean Textual Wiki Archive (.md)
+    // 8. Generate Clean Textual Wiki Archive (.md)
     if (url.pathname === "/api/wiki/export" && req.method === "GET") {
       const catalog = indexer.getCatalog();
       const wikiMarkdown = wikiGen.generateWikiMarkdown(catalog);
@@ -119,7 +154,7 @@ const server = Bun.serve({
       }), { headers });
     }
 
-    // 6. 5-Competitor Matrix
+    // 9. 5-Competitor Matrix
     if (url.pathname === "/api/competitors" && req.method === "GET") {
       return new Response(JSON.stringify(benchmark.getComparison()), { headers });
     }

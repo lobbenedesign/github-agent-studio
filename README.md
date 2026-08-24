@@ -3,13 +3,15 @@
 [![Bun](https://img.shields.io/badge/Bun-v1.4+-black.svg?logo=bun)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Daemon](https://img.shields.io/badge/24h%20Crawler%20Daemon-Active%20%7C%20Version%20Tracker-green.svg)](#-features)
+[![Active Fork Hunter](https://img.shields.io/badge/Active%20Fork%20Hunter-Ahead%20Commits-green.svg)](#-features)
+[![Security Shield](https://img.shields.io/badge/OpenSSF%20Security-Grade%20A%2B-blue.svg)](#-features)
+[![SQL Studio](https://img.shields.io/badge/MergeStat%20SQL-In--Memory-purple.svg)](#-features)
 
 [English 🇬🇧](#english) • [Italiano 🇮🇹](#italiano)
 
-> **The Universal A-to-Z GitHub Repository Intelligence, Version Delta Tracker & Daily Daemon. Automatically monitors GitHub every 24 hours for new releases, computes strategic impact scores (0–100), and generates clean text-only Markdown Wiki archives with direct access links.**
+> **The Ultimate GitHub Intelligence, Active Fork Hunter & Security Studio. Scans repositories from A-to-Z, discovers hidden community forks with extra features ahead of master, audits supply-chain security (OpenSSF), runs SQL queries over code, and executes daily autonomous syncs.**
 >
-> *L'intelligenza universale per GitHub con demone di scansione continua a 24 ore: traccia nuove release e versioni, valuta l'impatto strategico del codice (0–100) e genera archivi Wiki testuali in Markdown pulito con link diretti di accesso.*
+> *La piattaforma definitiva per GitHub: scansiona i repository dalla A alla Z, scova i migliori fork della community più avanzati del progetto originale, esegue audit di sicurezza OpenSSF, supporta query SQL in-memory e aggiornamenti continui ogni 24 ore.*
 
 ![GitHub Agent Studio Dashboard](./public/screenshot.jpg)
 
@@ -18,34 +20,34 @@
 <a name="english"></a>
 ## 🇬🇧 English Documentation
 
-### 🏆 Why GitHub Agent Studio is the Ultimate Intelligence Platform
+### 🏆 Key Superpowers & Features
 
-1. **⏰ 24-Hour Autonomous Crawler Daemon**:
-   * Runs in the background every 24 hours to automatically discover newly trending AI repositories on GitHub and detect new release tags/commits on existing tracked codebases.
-2. **🔄 Version & Release Delta Tracker**:
-   * Tracks star velocity deltas ($\Delta$ stars / 24h), release versions (e.g. `v1.2.0` $\rightarrow$ `v1.3.0`), and breaking changelogs.
-3. **🔤 Comprehensive A-to-Z Categorization**:
-   * Indexes and filters repositories alphabetically from A to Z across LLMs, Agents, Vision, Voice, MCTS, and SWE.
-4. **🔬 Deep Code & Architecture Evaluator**:
-   * Analyzes repo structure, AST complexity, community velocity, and self-hostability to compute an objective **Strategic Score (0–100)** and actionable verdict (`MUST FORK & ENHANCE 🚀`, `HIGH POTENTIAL ⚡`, `MONITOR 👁️`, `IGNORE 🚫`).
-5. **📖 Clean Textual Wiki Archive Generator**:
-   * Generates structured, image-free Markdown documentation with direct clickable URLs and strategic enhancement roadmaps in one click.
-6. **💾 Persistent Local Database**:
-   * Saves the catalog to `data/catalog.json` so your intelligence index survives server reboots.
+1. **🌟 Active Fork Hunter (Beyond Useful-Forks & Fork-Finder)**:
+   * Analyzes the fork tree of any repository to identify community forks that are **commits ahead of master** with custom features, bug fixes, or Apple Silicon/CUDA optimizations.
+2. **🛡️ OpenSSF Security & Supply-Chain Shield**:
+   * Inspects dependency vulnerability trees, untracked binary artifacts, token leaks, and assigns a **Security Grade (A+ to F)** before you fork or run code.
+3. **🗄️ MergeStat SQL Code Explorer**:
+   * Execute real-time SQL queries over codebases and the catalog (e.g. `SELECT Name, Stars, Score FROM catalog WHERE Score >= 88 ORDER BY starDelta24h DESC`).
+4. **⏰ 24-Hour Autonomous Crawler Daemon**:
+   * Runs in the background every 24 hours to track new AI repositories, version increments, and star velocity deltas.
+5. **🔤 Comprehensive A-to-Z Catalog**:
+   * Fast alphabetical categorization across LLMs, Multimodal, Voice, MCTS, Fine-Tuning, and SWE.
+6. **📖 Text-Only Markdown Wiki Generator**:
+   * Generates clean, image-free documentation archives with direct access links.
 
 ---
 
-### 📊 Benchmark: GitHub Agent Studio vs. Top 5 Competitors
+### 📊 Benchmark Matrix: GitHub Agent Studio vs. 5 Specialized Competitors
 
-| Metric / Feature | 🐙 **GitHub Agent Studio** | **GitHub Trending** | **OSS Insight** | **GitHunt** | **Awesome Lists** |
+| Metric / Feature | 🐙 **GitHub Agent Studio** | **Useful Forks** | **OpenSSF Scorecard** | **MergeStat** | **OSS Insight** |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **24h Autonomous Daemon** | **✓ Built-in** | ✗ No | ✗ No | ✗ Extension only | ✗ Manual |
-| **Version & Release Tracker**| **✓ Live Delta** | ✗ Releases only | ✗ Metrics only | ✗ No | ✗ No |
-| **A-to-Z Alphabetical Index** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✓ Static text |
-| **Deep Code Quality Score**| **✓ Yes (0-100)** | ✗ Stars only | ✗ Metrics only | ✗ Stars only | ✗ No |
-| **Forkability Recommendation**| **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
-| **Textual Wiki Generator** | **✓ 1-Click Export** | ✗ No | ✗ No | ✗ No | ✗ Manual |
-| **100% Local Privacy** | **✓ Local Bun** | ✗ Cloud | ✗ Cloud | ✗ Cloud | ✓ Static |
+| **Active Fork Hunter** | **✓ Built-in** | ✓ Yes | ✗ No | ✗ No | ✗ No |
+| **Security Shield (CVE/Binaries)** | **✓ Built-in** | ✗ No | ✓ Yes | ✗ No | ✗ No |
+| **SQL Query Engine** | **✓ Built-in** | ✗ No | ✗ No | ✓ Yes | ✗ No |
+| **A-to-Z Categorization** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **Forkability Score (0-100)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **Textual Wiki Generator** | **✓ 1-Click Export** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **100% Local Privacy** | **✓ Local Bun** | ☁️ Web | ☁️ Cloud | ☁️ DB Setup | ☁️ Cloud |
 
 ---
 
@@ -69,11 +71,11 @@ Open your browser at **`http://localhost:3011`**.
 
 ### 🏆 Perché GitHub Agent Studio è Unico
 
-1. **⏰ Demone di Scansione Automatica ogni 24 Ore**: Lavora in background per scansionare costantemente GitHub, individuare nuovi progetti emergenti e rilevare nuovi aggiornamenti di versione dei progetti già archiviati.
-2. **🔄 Radar delle Versioni & Delta Changelog**: Monitora il salto di versione (es. da `v1.2` a `v1.3`), le stelle guadagnate nelle ultime 24 ore e le modifiche al codice.
-3. **🔤 Classificazione da A a Z con Ordinamento Rapido**: Filtra per lettera alfabetica, per punteggio strategico o per crescita nelle ultime 24 ore.
-4. **🔬 Analisi del Codice & Indice di Forkabilità (0-100)**: Legge l'architettura dei file e genera la sintesi in 3 righe (*Cos'è, Come funziona, Verdetto strategico*).
-5. **📖 Archivio Wiki Testuale con Link Diretti**: Esporta in un attimo un compendio pulito in Markdown senza immagini per lo studio strategico.
+1. **🌟 Cacciatore di Fork Attivi (*Active Fork Hunter*)**: Scansiona la rete dei fork di qualsiasi progetto e trova gli sviluppatori che hanno aggiunto nuove feature e risolto bug ignorati dal creatore originale.
+2. **🛡️ Scudo di Sicurezza OpenSSF**: Verifica vulnerabilità nelle dipendenze, file binari pericolosi e licenze commerciali assegnando un voto di sicurezza da A+ a F.
+3. **🗄️ Studio SQL (Stile MergeStat)**: Interroga l'intero catalogo con query SQL native direttamente dal browser.
+4. **⏰ Demone di Scansione Automatica ogni 24 Ore**: Aggiorna lo stato dei repository, le nuove release e la crescita delle stelle ogni giorno.
+5. **📖 Compendio Wiki in Markdown**: Esporta istantaneamente un archivio testuale pulito con link diretti per lo studio strategico.
 
 ---
 

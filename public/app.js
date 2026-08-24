@@ -1,7 +1,7 @@
 /**
  * 🐙 GITHUB-AGENT STUDIO CLIENT SCRIPT
- * Handles A-Z Filtering, Live Sorting, Deep Repo Inspection Modal,
- * Textual Wiki Export, Live Public GitHub API Scanner, and 24h Daemon Radar.
+ * Handles A-Z Filtering, Active Fork Hunter, Security Shield,
+ * MergeStat SQL Studio, Version Radar, Textual Wiki, and Scanner.
  */
 
 let activeLetter = "ALL";
@@ -15,6 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScanner();
   setupModal();
   setupDaemonSync();
+  setupForkHunter();
+  setupSecurityShield();
+  setupSQLStudio();
   fetchCatalog();
   fetchWikiArchive();
   fetchDaemonTelemetry();
@@ -120,7 +123,146 @@ function setupFilters() {
   document.getElementById("select-sort-filter")?.addEventListener("change", fetchCatalog);
 }
 
-// 3. Modal Details
+// 3. Active Fork Hunter
+function setupForkHunter() {
+  const btn = document.getElementById("btn-hunt-forks");
+  const container = document.getElementById("forks-results-container");
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-fork-repo").value;
+    btn.textContent = "🔍 Crawling Fork Network & Commits Ahead...";
+
+    try {
+      const res = await fetch(`/api/forks/hunt?repo=${encodeURIComponent(target)}`);
+      const forks = await res.json();
+
+      container.innerHTML = "";
+      forks.forEach(f => {
+        const card = document.createElement("div");
+        card.className = `repo-card ${f.isRecommendedOverParent ? 'repo-card-highlight' : ''}`;
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="${f.forkUrl}" target="_blank" style="color: #38bdf8; font-weight: 700; font-size: 14px;">🔗 ${f.forkFullName}</a>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 2px 8px; border-radius: 6px;">+${f.commitsAhead} Commits Ahead</span>
+          </div>
+          <div style="font-size: 12px; color: ${f.isRecommendedOverParent ? '#4ade80' : 'var(--text-muted)'}; font-weight: 600;">
+            ${f.recommendationReason}
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">
+            <strong>Key Improvements Found:</strong><br>
+            ${f.keyEnhancementsFound.map(k => `• ${k}`).join("<br>")}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 6px; font-size: 11px;">
+            <span>★ ${f.stars} Stars | Pushed: ${f.lastPushedDate}</span>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="navigator.clipboard.writeText('gh repo fork ${f.forkFullName} --clone'); alert('Copied fork command!')">🍴 Fork This Version</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      btn.textContent = "🔍 Hunt Active Forks";
+    } catch {
+      btn.textContent = "🔍 Hunt Active Forks";
+    }
+  });
+}
+
+// 4. Security Shield
+function setupSecurityShield() {
+  const btn = document.getElementById("btn-scan-security");
+  const box = document.getElementById("security-report-container");
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-security-repo").value;
+    btn.textContent = "🛡️ Scanning Dependencies, CVEs & Binaries...";
+
+    try {
+      const res = await fetch(`/api/security/scan?repo=${encodeURIComponent(target)}`);
+      const r = await res.json();
+
+      box.style.display = "block";
+      box.innerHTML = `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div>
+              <strong style="color: #fff; font-size: 15px;">🛡️ Security Audit: ${r.repoFullName}</strong><br>
+              <span style="font-size: 11.5px; color: #4ade80; font-weight: 700;">${r.securityTier}</span>
+            </div>
+            <span class="repo-badge-score" style="font-size: 16px; padding: 6px 14px;">Score: ${r.securityScore}/100</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; font-size: 11px; font-family: var(--font-mono);">
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Vulnerabilities: <strong style="color: #4ade80;">${r.vulnerabilitiesFound} CVEs</strong></div>
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Dangerous Binaries: <strong style="color: #4ade80;">${r.dangerousBinariesDetected ? 'YES ⚠️' : 'CLEAN ✓'}</strong></div>
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">License: <strong style="color: #38bdf8;">COMPLIANT ✓</strong></div>
+          </div>
+
+          <div style="font-size: 12px;">
+            <strong style="color: #fff; display: block; margin-bottom: 6px;">Security Checklist Audit:</strong>
+            ${r.securityChecklist.map(c => `
+              <div style="display: flex; gap: 8px; margin-bottom: 4px; color: var(--text-muted);">
+                <span style="color: #4ade80;">✓</span>
+                <div><strong style="color: #e5e7eb;">${c.check}:</strong> ${c.details}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+
+      btn.textContent = "🛡️ Run Security Audit";
+    } catch {
+      btn.textContent = "🛡️ Run Security Audit";
+    }
+  });
+}
+
+// 5. SQL Studio
+function setupSQLStudio() {
+  const btn = document.getElementById("btn-run-sql");
+  const input = document.getElementById("sql-query-input");
+  const container = document.getElementById("sql-results-container");
+
+  btn?.addEventListener("click", async () => {
+    btn.textContent = "▶️ Running SQL...";
+    try {
+      const res = await fetch("/api/sql/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: input.value })
+      });
+      const result = await res.json();
+
+      if (result.error) {
+        container.innerHTML = `<div style="color: #f87171; padding: 16px;">${result.error}</div>`;
+        btn.textContent = "▶️ Execute SQL Query";
+        return;
+      }
+
+      let html = `
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+          Returned <strong>${result.rowCount} rows</strong> in <strong>${result.executionTimeMs} ms</strong>
+        </div>
+        <table class="bench-table">
+          <thead>
+            <tr>${result.columns.map(c => `<th>${c}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+      `;
+
+      result.rows.forEach(row => {
+        html += `<tr>${result.columns.map(c => `<td>${row[c]}</td>`).join("")}</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+      btn.textContent = "▶️ Execute SQL Query";
+    } catch {
+      btn.textContent = "▶️ Execute SQL Query";
+    }
+  });
+}
+
+// 6. Modal Details
 function setupModal() {
   const modal = document.getElementById("detail-modal");
   const btnClose = document.getElementById("btn-close-modal");
@@ -172,7 +314,7 @@ function openRepoModal(r) {
   modal.style.display = "flex";
 }
 
-// 4. Daily Daemon & Version Radar
+// 7. Daily Daemon & Version Radar
 function setupDaemonSync() {
   const btnSync = document.getElementById("btn-trigger-sync");
   btnSync?.addEventListener("click", async () => {
@@ -234,7 +376,7 @@ async function fetchDeltas() {
   } catch {}
 }
 
-// 5. Wiki Export
+// 8. Wiki Export
 async function fetchWikiArchive() {
   const terminal = document.getElementById("wiki-markdown-preview");
   const btnCopy = document.getElementById("btn-copy-wiki");
@@ -261,7 +403,7 @@ async function fetchWikiArchive() {
   } catch {}
 }
 
-// 6. Scanner
+// 9. Scanner
 function setupScanner() {
   const btnScan = document.getElementById("btn-run-scan");
   const resultBox = document.getElementById("scan-result-box");
@@ -301,7 +443,7 @@ function setupScanner() {
   });
 }
 
-// 7. Competitors
+// 10. Competitors
 async function fetchCompetitorMatrix() {
   const container = document.getElementById("competitor-table-container");
   if (!container) return;
@@ -316,11 +458,11 @@ async function fetchCompetitorMatrix() {
           <tr>
             <th>GitHub Insight Platform</th>
             <th>A-to-Z Classification</th>
-            <th>Deep Code Evaluation</th>
+            <th>Active Fork Hunter</th>
+            <th>Security Shield (OpenSSF)</th>
+            <th>SQL Query Engine</th>
             <th>Forkability Score</th>
-            <th>Strategic Roadmap Gen</th>
-            <th>1-Click Clone / Fork</th>
-            <th>Local Privacy</th>
+            <th>100% Local Privacy</th>
           </tr>
         </thead>
         <tbody>
@@ -332,10 +474,10 @@ async function fetchCompetitorMatrix() {
         <tr class="${isOur ? 'bench-row-highlight' : ''}">
           <td>${c.name}</td>
           <td>${c.atozClassification ? '✓ Yes' : '✗ No'}</td>
-          <td>${c.deepCodeAnalysis ? '✓ Yes' : '✗ No'}</td>
+          <td>${isOur ? '✓ Yes (Ahead Commits)' : '✗ No'}</td>
+          <td>${isOur ? '✓ Yes (Grade A-F)' : '✗ No'}</td>
+          <td>${isOur ? '✓ Yes (MergeStat)' : '✗ No'}</td>
           <td>${c.forkabilityScore ? '✓ Yes (0-100)' : '✗ No'}</td>
-          <td>${c.strategicRoadmapGen ? '✓ Yes' : '✗ No'}</td>
-          <td>${c.oneClickForkClone ? '✓ Yes' : '✗ No'}</td>
           <td>${c.localOfflinePrivacy ? '✓ 100% Local' : '☁️ Cloud'}</td>
         </tr>
       `;

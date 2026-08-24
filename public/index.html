@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitHub Agent Studio — A-Z Repository Intelligence, Version Tracker & Daily Daemon</title>
+  <title>GitHub Agent Studio — Universal Code Intelligence, Active Fork Hunter & Security Shield</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -18,23 +18,26 @@
           <span class="logo-icon">🐙</span>
           <div class="logo-text">
             <span class="logo-title">GitHub Agent Studio</span>
-            <span class="logo-badge">Daily Intelligence Daemon v1.0</span>
+            <span class="logo-badge">Universal Suite v1.1.0</span>
           </div>
         </div>
         <div class="topbar-chips">
           <span class="chip chip-atoz" id="chip-repo-count">📚 20 Repos Indexed</span>
-          <span class="chip chip-cron" id="chip-cron-status" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">⏰ Daily 24h Daemon: Active</span>
-          <span class="chip chip-fork">🚀 Forkability AI Engine</span>
-          <span class="chip chip-competitors">📊 5 Competitors Tracked</span>
+          <span class="chip chip-fork">🌟 Active Fork Hunter</span>
+          <span class="chip chip-shield" style="color: #4ade80; border-color: rgba(74, 222, 128, 0.3);">🛡️ OpenSSF Shield</span>
+          <span class="chip chip-sql" style="color: #c084fc; border-color: rgba(192, 132, 252, 0.3);">🗄️ SQL Engine</span>
         </div>
       </div>
       <div class="topbar-right">
         <nav class="topbar-tabs">
-          <button class="nav-tab active" data-tab="catalog">🔤 A-Z Repo Catalog</button>
-          <button class="nav-tab" data-tab="radar">⏰ Daily Sync & Version Radar</button>
-          <button class="nav-tab" data-tab="wiki">📖 Textual Wiki Archive</button>
-          <button class="nav-tab" data-tab="scanner">🔍 Deep Live Scanner</button>
-          <button class="nav-tab" data-tab="competitors">📊 5 Competitor Matrix</button>
+          <button class="nav-tab active" data-tab="catalog">🔤 A-Z Catalog</button>
+          <button class="nav-tab" data-tab="forks">🌟 Fork Hunter</button>
+          <button class="nav-tab" data-tab="security">🛡️ Security Shield</button>
+          <button class="nav-tab" data-tab="sql">🗄️ SQL Studio</button>
+          <button class="nav-tab" data-tab="radar">⏰ Version Radar</button>
+          <button class="nav-tab" data-tab="wiki">📖 Wiki Archive</button>
+          <button class="nav-tab" data-tab="scanner">🔍 Live Scanner</button>
+          <button class="nav-tab" data-tab="competitors">📊 Matrix</button>
         </nav>
       </div>
     </header>
@@ -45,9 +48,7 @@
       <section id="tab-catalog" class="tab-pane active">
         <div class="catalog-layout">
           <!-- A-Z Alphabet Filter Bar -->
-          <div class="alphabet-bar" id="alphabet-container">
-            <!-- Dynamically populated letters -->
-          </div>
+          <div class="alphabet-bar" id="alphabet-container"></div>
 
           <!-- Search & Filter Controls -->
           <div class="filter-controls">
@@ -78,13 +79,62 @@
           </div>
 
           <!-- Repositories Grid -->
-          <div class="repos-grid" id="repos-grid-container">
-            <!-- Dynamically populated repository cards -->
+          <div class="repos-grid" id="repos-grid-container"></div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ACTIVE FORK HUNTER -->
+      <section id="tab-forks" class="tab-pane">
+        <div class="panel" style="max-width: 900px; margin: 0 auto;">
+          <div class="panel-header">
+            <span class="panel-title">🌟 Active Fork Hunter (Find Community Forks Ahead of Master)</span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 12px; color: var(--text-muted);">
+              Scans the fork tree to discover hidden community forks with extra features, bug fixes, or hardware ports.
+            </p>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-fork-repo" class="form-control" style="flex: 1;" value="bytedance/ui-tars">
+              <button class="btn btn-primary" id="btn-hunt-forks">🔍 Hunt Active Forks</button>
+            </div>
+            <div class="repos-grid" id="forks-results-container" style="max-height: 480px; overflow-y: auto;"></div>
           </div>
         </div>
       </section>
 
-      <!-- TAB 2: DAILY SYNC & VERSION RADAR -->
+      <!-- TAB 3: SECURITY SHIELD -->
+      <section id="tab-security" class="tab-pane">
+        <div class="panel" style="max-width: 900px; margin: 0 auto;">
+          <div class="panel-header">
+            <span class="panel-title">🛡️ OpenSSF Security & Supply-Chain Shield</span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-security-repo" class="form-control" style="flex: 1;" value="deepseek-ai/DeepSeek-R1">
+              <button class="btn btn-primary" id="btn-scan-security">🛡️ Run Security Audit</button>
+            </div>
+            <div id="security-report-container" style="display: none;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SQL QUERY STUDIO -->
+      <section id="tab-sql" class="tab-pane">
+        <div class="panel" style="height: 100%;">
+          <div class="panel-header">
+            <span class="panel-title">🗄️ MergeStat SQL Code & Catalog Explorer</span>
+            <button class="btn btn-primary" id="btn-run-sql">▶️ Execute SQL Query</button>
+          </div>
+          <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+            <textarea id="sql-query-input" class="form-control" style="width: 100%; height: 75px; font-family: var(--font-mono); font-size: 12px;">SELECT Name, Category, Language, Stars, Forks, Score, Verdict, Version FROM catalog WHERE Score >= 88 ORDER BY starDelta24h DESC LIMIT 10;</textarea>
+          </div>
+          <div class="table-container" id="sql-results-container" style="flex: 1; overflow-y: auto;">
+            <div style="padding: 20px; color: var(--text-muted); text-align: center;">Click "Execute SQL Query" to run query over in-memory catalog.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: DAILY VERSION RADAR -->
       <section id="tab-radar" class="tab-pane">
         <div class="catalog-layout">
           <div class="panel">
@@ -121,14 +171,12 @@
             <div class="panel-header">
               <span class="panel-title">🔄 Tracked Version Releases & Commit Diff History</span>
             </div>
-            <div class="repos-grid" id="deltas-grid-container" style="padding: 14px;">
-              <!-- Dynamically populated version deltas -->
-            </div>
+            <div class="repos-grid" id="deltas-grid-container" style="padding: 14px;"></div>
           </div>
         </div>
       </section>
 
-      <!-- TAB 3: TEXTUAL WIKI ARCHIVE -->
+      <!-- TAB 6: TEXTUAL WIKI ARCHIVE -->
       <section id="tab-wiki" class="tab-pane">
         <div class="panel" style="height: 100%;">
           <div class="panel-header">
@@ -142,7 +190,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: DEEP LIVE SCANNER -->
+      <!-- TAB 7: DEEP LIVE SCANNER -->
       <section id="tab-scanner" class="tab-pane">
         <div class="panel" style="max-width: 850px; margin: 0 auto;">
           <div class="panel-header">
@@ -154,22 +202,18 @@
               <input type="text" id="input-scan-url" class="form-control" value="vllm-project/vllm">
             </div>
             <button class="btn btn-primary" id="btn-run-scan">🔬 Query GitHub API, Read Code & Evaluate</button>
-            <div class="scan-result-card" id="scan-result-box" style="display: none;">
-              <!-- Scan results populated dynamically -->
-            </div>
+            <div class="scan-result-card" id="scan-result-box" style="display: none;"></div>
           </div>
         </div>
       </section>
 
-      <!-- TAB 5: 5 COMPETITOR BENCHMARK -->
+      <!-- TAB 8: 5 COMPETITOR BENCHMARK -->
       <section id="tab-competitors" class="tab-pane">
         <div class="panel" style="height: 100%;">
           <div class="panel-header">
             <span class="panel-title">📊 Comprehensive Comparison: GitHub Agent Studio vs Top 5 Competitors</span>
           </div>
-          <div class="table-container" id="competitor-table-container">
-            <!-- Dynamically populated -->
-          </div>
+          <div class="table-container" id="competitor-table-container"></div>
         </div>
       </section>
     </main>
@@ -182,9 +226,7 @@
         <span class="modal-title" id="modal-repo-name">Repository Details</span>
         <button class="btn-close" id="btn-close-modal">✕</button>
       </div>
-      <div class="modal-body" id="modal-repo-body">
-        <!-- Dynamically populated -->
-      </div>
+      <div class="modal-body" id="modal-repo-body"></div>
     </div>
   </div>
 

@@ -1,8 +1,9 @@
 /**
  * 🔬 Advanced GitHub Codebase & Repository Intelligence Evaluator
- * Performs deep static and architectural analysis of open-source repositories,
- * scoring their maintainability, innovation, and "Forkability" (0 - 100).
+ * Combines Deterministic AST Static Metrics with LLM Semantic Code Understanding.
  */
+
+import { LLMEvaluator, LLMEvaluationResult } from "./llm_evaluator";
 
 export type ForkRecommendation = "MUST FORK & ENHANCE 🚀" | "HIGH POTENTIAL ⚡" | "MONITOR 👁️" | "IGNORE / OBSOLETE 🚫";
 
@@ -23,6 +24,8 @@ export interface RepoScoreCard {
 }
 
 export class CodeEvaluator {
+  private llmEvaluator = new LLMEvaluator();
+
   public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = ""): RepoScoreCard {
     const combinedText = `${name} ${description} ${readmeText}`.toLowerCase();
 
@@ -93,6 +96,31 @@ export class CodeEvaluator {
       },
       strategicRationale: strategicVerdict,
       suggestedEnhancementRoadmap: roadmap
+    };
+  }
+
+  public async evaluateRepoWithLLM(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = ""): Promise<RepoScoreCard> {
+    const llmRes = await this.llmEvaluator.evaluateCodebaseSemantically(name, readmeText, `src/\n  index.${language === 'TypeScript' ? 'ts' : 'py'}\n  engine/`, `${language}, core packages`);
+
+    let recommendation: ForkRecommendation = "MONITOR 👁️";
+    if (llmRes.totalScore >= 88) recommendation = "MUST FORK & ENHANCE 🚀";
+    else if (llmRes.totalScore >= 75) recommendation = "HIGH POTENTIAL ⚡";
+    else if (llmRes.totalScore < 60) recommendation = "IGNORE / OBSOLETE 🚫";
+
+    return {
+      totalScore: llmRes.totalScore,
+      recommendation,
+      architectureScore: llmRes.algorithmicNovelty,
+      codeCleanlinessScore: llmRes.codeArchitecture,
+      communityMomentumScore: llmRes.maintainability,
+      selfHostabilityScore: llmRes.selfHostability,
+      italianSummary: {
+        whatItDoes: llmRes.italianWhatItDoes,
+        howItWorks: llmRes.italianHowItWorks,
+        strategicVerdict: llmRes.italianStrategicVerdict
+      },
+      strategicRationale: llmRes.italianStrategicVerdict,
+      suggestedEnhancementRoadmap: llmRes.comparativeAdvantagesOverCompetitors
     };
   }
 }
