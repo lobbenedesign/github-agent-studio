@@ -1,9 +1,10 @@
 /**
- * 📚 A-to-Z GitHub Repository Catalog & Indexer
- * Organizes, parses, and provides search & filtering across open-source AI projects.
+ * 📚 A-to-Z GitHub Repository Catalog & Indexer with Live API Support
+ * Organizes, parses, and provides search, sorting & filtering across open-source AI projects.
  */
 
 import { CodeEvaluator, RepoScoreCard } from "./code_evaluator";
+import { GitHubApiClient, GitHubLiveMetadata } from "./github_api_client";
 
 export interface GitHubRepoItem {
   id: string;
@@ -13,14 +14,18 @@ export interface GitHubRepoItem {
   owner: string;
   stars: number;
   forks: number;
+  openIssues: number;
   language: string;
+  license: string;
   category: "LLM & Inference" | "Agents & Automation" | "Vision & Multimodal" | "Voice & Audio" | "Reasoning & MCTS" | "Fine-Tuning & RL" | "Code & SWE" | "RAG & Knowledge";
   description: string;
   scoreCard: RepoScoreCard;
+  updatedAt: string;
 }
 
 export class RepoIndexer {
   private evaluator = new CodeEvaluator();
+  private apiClient = new GitHubApiClient();
   private catalog: GitHubRepoItem[] = [];
 
   constructor() {
@@ -36,7 +41,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 320,
         forks: 48,
+        openIssues: 2,
         language: "TypeScript",
+        license: "MIT",
         category: "Voice & Audio" as const,
         description: "Full-Duplex Real-Time Neural Voice Engine with Sub-150ms Turn-Taking, Natural Barge-In, and Voice Tools Dispatcher."
       },
@@ -47,7 +54,9 @@ export class RepoIndexer {
         owner: "lyogavin",
         stars: 12400,
         forks: 1100,
+        openIssues: 45,
         language: "Python",
+        license: "Apache-2.0",
         category: "LLM & Inference" as const,
         description: "Run 70B and 405B large language models on consumer 4GB-8GB VRAM GPUs via layer-wise SSD streaming."
       },
@@ -58,7 +67,9 @@ export class RepoIndexer {
         owner: "browser-use",
         stars: 28500,
         forks: 3100,
+        openIssues: 120,
         language: "Python",
+        license: "MIT",
         category: "Agents & Automation" as const,
         description: "Make websites accessible for AI agents with vision and autonomous click/type navigation."
       },
@@ -69,7 +80,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 410,
         forks: 62,
+        openIssues: 1,
         language: "TypeScript",
+        license: "MIT",
         category: "Code & SWE" as const,
         description: "Autonomous Codebase Diagnostic & Healing Studio with AST error tracing and sandboxed regression test verification."
       },
@@ -80,7 +93,9 @@ export class RepoIndexer {
         owner: "deepseek-ai",
         stars: 76000,
         forks: 8900,
+        openIssues: 380,
         language: "Python",
+        license: "MIT",
         category: "Reasoning & MCTS" as const,
         description: "Incentivizing Reasoning Capability in LLMs via Reinforcement Learning without Supervised Fine-Tuning."
       },
@@ -91,7 +106,9 @@ export class RepoIndexer {
         owner: "exo-explore",
         stars: 19800,
         forks: 1450,
+        openIssues: 85,
         language: "Python",
+        license: "GPL-3.0",
         category: "LLM & Inference" as const,
         description: "Run decentralized AI clusters on everyday consumer devices (Macs, iPhones, Androids) via peer-to-peer mesh."
       },
@@ -102,9 +119,24 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 380,
         forks: 55,
+        openIssues: 0,
         language: "TypeScript",
+        license: "MIT",
         category: "Code & SWE" as const,
         description: "Infinite Generative UI Canvas & Real-Time Streaming Component Studio with Sandboxed Interactive Iframe Previews."
+      },
+      {
+        name: "GitHub-Agent-Studio",
+        fullName: "lobbenedesign/github-agent-studio",
+        url: "https://github.com/lobbenedesign/github-agent-studio",
+        owner: "lobbenedesign",
+        stars: 510,
+        forks: 74,
+        openIssues: 0,
+        language: "TypeScript",
+        license: "MIT",
+        category: "Agents & Automation" as const,
+        description: "Universal A-to-Z GitHub Repository Intelligence, Deep Code Quality Evaluator & Clean Textual Wiki Archive Generator."
       },
       {
         name: "HyperRAG-Studio",
@@ -113,7 +145,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 540,
         forks: 82,
+        openIssues: 3,
         language: "TypeScript",
+        license: "MIT",
         category: "RAG & Knowledge" as const,
         description: "Next-Gen Knowledge Graph RAG (LightRAG) & Speculative Decoding Studio (EAGLE 3.5x) with Google TurboQuant 4-bit."
       },
@@ -124,7 +158,9 @@ export class RepoIndexer {
         owner: "kvcache-ai",
         stars: 8200,
         forks: 670,
+        openIssues: 32,
         language: "C++",
+        license: "Apache-2.0",
         category: "LLM & Inference" as const,
         description: "Flexible, ultra-fast Python/C++ library to run DeepSeek-V3 and 671B MoE models on a single GPU + CPU RAM."
       },
@@ -135,7 +171,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 620,
         forks: 94,
+        openIssues: 1,
         language: "TypeScript",
+        license: "MIT",
         category: "LLM & Inference" as const,
         description: "Universal Local LLM Orchestrator unifying Apple MLX, llama.cpp, AirLLM, KTransformers, Exo, and Google TurboQuant 4-bit KV."
       },
@@ -146,7 +184,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 450,
         forks: 70,
+        openIssues: 0,
         language: "TypeScript",
+        license: "MIT",
         category: "Vision & Multimodal" as const,
         description: "Multimodal Vision-Language Desktop Automation Agent with Pixel-Coordinate Visual Grounding and Emergency Panic Switch."
       },
@@ -157,7 +197,9 @@ export class RepoIndexer {
         owner: "All-Hands-AI",
         stars: 44200,
         forks: 5600,
+        openIssues: 240,
         language: "Python",
+        license: "MIT",
         category: "Code & SWE" as const,
         description: "Open-source software development agent that can write code, fix bugs, and execute shell commands."
       },
@@ -168,7 +210,9 @@ export class RepoIndexer {
         owner: "thesysdev",
         stars: 18900,
         forks: 1950,
+        openIssues: 64,
         language: "TypeScript",
+        license: "Apache-2.0",
         category: "Code & SWE" as const,
         description: "OpenUI lets you describe UI components and streams them directly into live interactive web elements."
       },
@@ -179,7 +223,9 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 490,
         forks: 76,
+        openIssues: 0,
         language: "TypeScript",
+        license: "MIT",
         category: "Reasoning & MCTS" as const,
         description: "Monte Carlo Tree Search (MCTS) Test-Time Compute Reasoning Studio with Sandbox Invariant Verification."
       },
@@ -190,9 +236,11 @@ export class RepoIndexer {
         owner: "lobbenedesign",
         stars: 390,
         forks: 58,
+        openIssues: 0,
         language: "TypeScript",
+        license: "MIT",
         category: "Fine-Tuning & RL" as const,
-        description: "Local Group Relative Policy Optimization (GRPO) Reinforcement Learning Studio with Verifiable Reward Models."
+        description: "Local Group Relative Policy Optimization (GRPO) Reinforcement Learning Studio with Scaled Post-Training (GLM-5.3 Style)."
       },
       {
         name: "SWE-agent",
@@ -201,7 +249,9 @@ export class RepoIndexer {
         owner: "SWE-agent",
         stars: 16800,
         forks: 1720,
+        openIssues: 92,
         language: "Python",
+        license: "MIT",
         category: "Code & SWE" as const,
         description: "SWE-agent turns LM into software engineering agents capable of solving real bugs in GitHub repositories."
       },
@@ -212,7 +262,9 @@ export class RepoIndexer {
         owner: "unslothai",
         stars: 28400,
         forks: 2100,
+        openIssues: 110,
         language: "Python",
+        license: "Apache-2.0",
         category: "Fine-Tuning & RL" as const,
         description: "Finetune Llama 3.3, Mistral, Qwen 2.5 & DeepSeek-R1 2x-5x faster with 70% less memory using hand-written Triton kernels."
       },
@@ -223,7 +275,9 @@ export class RepoIndexer {
         owner: "bytedance",
         stars: 8700,
         forks: 890,
+        openIssues: 38,
         language: "Python",
+        license: "Apache-2.0",
         category: "Vision & Multimodal" as const,
         description: "End-to-end multimodal GUI agent model for operating computers and mobile phones via visual grounding."
       }
@@ -232,11 +286,12 @@ export class RepoIndexer {
     this.catalog = rawData.map(r => ({
       id: r.name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
       ...r,
-      scoreCard: this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description)
+      scoreCard: this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description),
+      updatedAt: "2026-08-24"
     }));
   }
 
-  public getCatalog(filterLetter?: string, category?: string, minScore?: number, query?: string): GitHubRepoItem[] {
+  public getCatalog(filterLetter?: string, category?: string, minScore?: number, query?: string, sortBy: string = "score"): GitHubRepoItem[] {
     let list = [...this.catalog];
 
     if (filterLetter && filterLetter !== "ALL") {
@@ -256,31 +311,58 @@ export class RepoIndexer {
       list = list.filter(r => r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q));
     }
 
-    // Default alphabetical sort A to Z
-    list.sort((a, b) => a.name.localeCompare(b.name));
+    // Dynamic Sorting
+    if (sortBy === "stars") {
+      list.sort((a, b) => b.stars - a.stars);
+    } else if (sortBy === "forks") {
+      list.sort((a, b) => b.forks - a.forks);
+    } else if (sortBy === "name") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      // Default: Highest Strategic Score first
+      list.sort((a, b) => b.scoreCard.totalScore - a.scoreCard.totalScore);
+    }
+
     return list;
   }
 
-  public evaluateCustomRepo(url: string, stars: number = 1200, forks: number = 180, language: string = "TypeScript", description: string = "AI open source repository"): GitHubRepoItem {
-    const parts = url.replace("https://github.com/", "").split("/");
-    const owner = parts[0] || "custom-dev";
-    const name = parts[1] || "custom-repo";
+  public async scanAndAddLiveRepo(urlOrName: string): Promise<GitHubRepoItem> {
+    const meta = await this.apiClient.fetchLiveRepo(urlOrName);
+
+    // Auto-detect category
+    let cat: GitHubRepoItem["category"] = "LLM & Inference";
+    const desc = (meta.description + " " + meta.topics.join(" ")).toLowerCase();
+    if (desc.includes("agent") || desc.includes("browser")) cat = "Agents & Automation";
+    else if (desc.includes("voice") || desc.includes("audio") || desc.includes("speech")) cat = "Voice & Audio";
+    else if (desc.includes("vision") || desc.includes("vlm") || desc.includes("gui")) cat = "Vision & Multimodal";
+    else if (desc.includes("reasoning") || desc.includes("mcts") || desc.includes("math")) cat = "Reasoning & MCTS";
+    else if (desc.includes("fine-tuning") || desc.includes("rl") || desc.includes("grpo")) cat = "Fine-Tuning & RL";
+    else if (desc.includes("code") || desc.includes("swe") || desc.includes("ui") || desc.includes("canvas")) cat = "Code & SWE";
+    else if (desc.includes("rag") || desc.includes("graph") || desc.includes("retrieval")) cat = "RAG & Knowledge";
+
+    const scoreCard = this.evaluator.evaluateRepo(meta.name, meta.stars, meta.forks, meta.language, meta.description, meta.readmeExcerpt);
 
     const item: GitHubRepoItem = {
-      id: name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-      name,
-      fullName: `${owner}/${name}`,
-      url,
-      owner,
-      stars,
-      forks,
-      language,
-      category: "LLM & Inference",
-      description,
-      scoreCard: this.evaluator.evaluateRepo(name, stars, forks, language, description)
+      id: meta.name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+      name: meta.name,
+      fullName: meta.fullName,
+      url: meta.url,
+      owner: meta.owner,
+      stars: meta.stars,
+      forks: meta.forks,
+      openIssues: meta.openIssues,
+      language: meta.language,
+      license: meta.license,
+      category: cat,
+      description: meta.description,
+      scoreCard,
+      updatedAt: meta.updatedAt.slice(0, 10)
     };
 
+    // Remove existing if duplicate, and add new
+    this.catalog = this.catalog.filter(c => c.fullName.toLowerCase() !== item.fullName.toLowerCase());
     this.catalog.push(item);
+
     return item;
   }
 }

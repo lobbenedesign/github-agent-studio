@@ -18,11 +18,11 @@
           <span class="logo-icon">🐙</span>
           <div class="logo-text">
             <span class="logo-title">GitHub Agent Studio</span>
-            <span class="logo-badge">A-Z Codebase Intelligence v1.0</span>
+            <span class="logo-badge">Universal A-Z Intelligence v1.0</span>
           </div>
         </div>
         <div class="topbar-chips">
-          <span class="chip chip-atoz" id="chip-repo-count">📚 18 Repos Indexed</span>
+          <span class="chip chip-atoz" id="chip-repo-count">📚 19 Repos Indexed</span>
           <span class="chip chip-fork">🚀 Forkability AI Engine</span>
           <span class="chip chip-wiki">📖 Textual Wiki Generator</span>
           <span class="chip chip-competitors">📊 5 Competitors Tracked</span>
@@ -32,7 +32,7 @@
         <nav class="topbar-tabs">
           <button class="nav-tab active" data-tab="catalog">🔤 A-Z Repo Catalog</button>
           <button class="nav-tab" data-tab="wiki">📖 Textual Wiki Archive</button>
-          <button class="nav-tab" data-tab="scanner">🔍 Deep Repo Scanner</button>
+          <button class="nav-tab" data-tab="scanner">🔍 Deep Live Scanner</button>
           <button class="nav-tab" data-tab="competitors">📊 5 Competitor Matrix</button>
         </nav>
       </div>
@@ -50,7 +50,7 @@
 
           <!-- Search & Filter Controls -->
           <div class="filter-controls">
-            <input type="text" id="input-search-query" class="form-control search-input" placeholder="🔍 Search by repository name, author, topic, or keyword...">
+            <input type="text" id="input-search-query" class="form-control search-input" placeholder="🔍 Search repository by name, author, topic, or keyword...">
             <select id="select-category-filter" class="form-control select-filter">
               <option value="ALL">All Categories</option>
               <option value="LLM & Inference">LLM & Inference</option>
@@ -67,6 +67,12 @@
               <option value="88">Tier 1: Score ≥ 88 (Must Fork 🚀)</option>
               <option value="75">Tier 2: Score ≥ 75 (High Potential ⚡)</option>
             </select>
+            <select id="select-sort-filter" class="form-control select-filter">
+              <option value="score">Sort: Strategic Score ↓</option>
+              <option value="stars">Sort: Most Stars ★ ↓</option>
+              <option value="forks">Sort: Most Forks ⑂ ↓</option>
+              <option value="name">Sort: Name A-Z ↑</option>
+            </select>
           </div>
 
           <!-- Repositories Grid -->
@@ -81,42 +87,27 @@
         <div class="panel" style="height: 100%;">
           <div class="panel-header">
             <span class="panel-title">📖 Universal Textual Wiki Archive (Clean Markdown & Direct Links)</span>
-            <button class="btn btn-primary" id="btn-copy-wiki">📋 Copy Markdown Wiki</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" id="btn-copy-wiki">📋 Copy Markdown Wiki</button>
+              <button class="btn btn-secondary" id="btn-download-wiki">💾 Download GITHUB_WIKI.md</button>
+            </div>
           </div>
           <pre class="wiki-terminal" id="wiki-markdown-preview">// Generating Textual Wiki Index...</pre>
         </div>
       </section>
 
-      <!-- TAB 3: DEEP REPO SCANNER -->
+      <!-- TAB 3: DEEP LIVE SCANNER -->
       <section id="tab-scanner" class="tab-pane">
-        <div class="panel" style="max-width: 800px; margin: 0 auto;">
+        <div class="panel" style="max-width: 850px; margin: 0 auto;">
           <div class="panel-header">
-            <span class="panel-title">🔍 Scan & Evaluate Any GitHub Repository</span>
+            <span class="panel-title">🔍 Deep Live Scanner & Code Evaluator (Public GitHub API)</span>
           </div>
           <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
             <div>
-              <label class="form-label">GitHub Repository URL (or owner/repo):</label>
-              <input type="text" id="input-scan-url" class="form-control" value="https://github.com/vllm-project/vllm">
+              <label class="form-label">GitHub Repository URL or 'owner/repo' handle:</label>
+              <input type="text" id="input-scan-url" class="form-control" value="vllm-project/vllm">
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-              <div>
-                <label class="form-label">Stars Estimate:</label>
-                <input type="number" id="input-scan-stars" class="form-control" value="34000">
-              </div>
-              <div>
-                <label class="form-label">Forks Estimate:</label>
-                <input type="number" id="input-scan-forks" class="form-control" value="4500">
-              </div>
-              <div>
-                <label class="form-label">Language:</label>
-                <input type="text" id="input-scan-lang" class="form-control" value="Python / C++">
-              </div>
-            </div>
-            <div>
-              <label class="form-label">Description / Architecture Summary:</label>
-              <textarea id="input-scan-desc" class="form-control" rows="3">A high-throughput and memory-efficient inference and serving engine for LLMs with PagedAttention.</textarea>
-            </div>
-            <button class="btn btn-primary" id="btn-run-scan">🔬 Run Deep Code Evaluation & Add to A-Z Catalog</button>
+            <button class="btn btn-primary" id="btn-run-scan">🔬 Query GitHub API, Read Code & Evaluate</button>
             <div class="scan-result-card" id="scan-result-box" style="display: none;">
               <!-- Scan results populated dynamically -->
             </div>
@@ -136,6 +127,19 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="modal-overlay" id="detail-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-repo-name">Repository Details</span>
+        <button class="btn-close" id="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body" id="modal-repo-body">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

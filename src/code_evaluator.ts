@@ -1,5 +1,5 @@
 /**
- * 🔬 GitHub Codebase & Repository Evaluator
+ * 🔬 Advanced GitHub Codebase & Repository Intelligence Evaluator
  * Performs deep static and architectural analysis of open-source repositories,
  * scoring their maintainability, innovation, and "Forkability" (0 - 100).
  */
@@ -13,35 +13,44 @@ export interface RepoScoreCard {
   codeCleanlinessScore: number; // 0 - 25
   communityMomentumScore: number; // 0 - 25
   selfHostabilityScore: number; // 0 - 20
+  italianSummary: {
+    whatItDoes: string;
+    howItWorks: string;
+    strategicVerdict: string;
+  };
   strategicRationale: string;
   suggestedEnhancementRoadmap: string[];
 }
 
 export class CodeEvaluator {
-  public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string): RepoScoreCard {
-    const desc = description.toLowerCase();
+  public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = ""): RepoScoreCard {
+    const combinedText = `${name} ${description} ${readmeText}`.toLowerCase();
 
-    // 1. Calculate Architecture Score (0-30)
-    let arch = 22;
-    if (desc.includes("mcts") || desc.includes("grpo") || desc.includes("full-duplex") || desc.includes("vlm") || desc.includes("ast")) arch += 7;
-    if (language === "Rust" || language === "TypeScript" || language === "C++") arch += 1;
+    // 1. Architecture & Innovation (0-30)
+    let arch = 20;
+    if (combinedText.includes("mcts") || combinedText.includes("grpo") || combinedText.includes("full-duplex") || combinedText.includes("vlm") || combinedText.includes("ast") || combinedText.includes("turboquant") || combinedText.includes("speculative")) {
+      arch += 8;
+    }
+    if (language === "Rust" || language === "TypeScript" || language === "C++") arch += 2;
     arch = Math.min(30, arch);
 
-    // 2. Code Cleanliness (0-25)
-    let clean = 18;
+    // 2. Code Cleanliness & Test Coverage (0-25)
+    let clean = 16;
     if (stars > 500) clean += 4;
     if (forks > 50) clean += 3;
+    if (combinedText.includes("test") || combinedText.includes("ci/cd") || combinedText.includes("workflow")) clean += 2;
     clean = Math.min(25, clean);
 
     // 3. Community Momentum (0-25)
-    let momentum = 15;
+    let momentum = 12;
     if (stars > 5000) momentum = 25;
     else if (stars > 1000) momentum = 22;
     else if (stars > 200) momentum = 18;
+    else if (stars > 50) momentum = 15;
 
-    // 4. Self-Hostability & Privacy (0-20)
-    let selfHost = 16;
-    if (!desc.includes("cloud only") && !desc.includes("saas")) selfHost = 20;
+    // 4. Local Self-Hostability & Privacy (0-20)
+    let selfHost = 15;
+    if (!combinedText.includes("cloud only") && !combinedText.includes("saas subscription")) selfHost = 20;
 
     const total = arch + clean + momentum + selfHost;
 
@@ -50,19 +59,25 @@ export class CodeEvaluator {
     else if (total >= 75) recommendation = "HIGH POTENTIAL ⚡";
     else if (total < 60) recommendation = "IGNORE / OBSOLETE 🚫";
 
-    const roadmap: string[] = [
-      `Add Cyberpunk Dark-Mode Web Studio with live WebSocket telemetry.`,
-      `Implement local hardware offloading (Apple Silicon MPS / NVIDIA CUDA).`,
-      `Integrate with the LLM Suite ecosystem (Nexus, HyperRAG, OmniClaw).`,
-      `Package with 1-click 'start-macos.command' script.`
-    ];
-
-    let rationale = `Repository shows strong fundamental algorithms. High value for fork & local adaptation.`;
+    // 3-Line Italian Executive Summary
+    const whatItDoes = `Progetto open-source per ${description.slice(0, 100)}...`;
+    const howItWorks = `Sviluppato in ${language}, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.`;
+    
+    let strategicVerdict = `Da monitorare: presenta buone idee ma necessita di verifiche sulla stabilità.`;
     if (total >= 88) {
-      rationale = `Exceptional cutting-edge codebase. Highly recommended for immediate fork, UI modernization, and suite unification.`;
+      strategicVerdict = `🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.`;
+    } else if (total >= 75) {
+      strategicVerdict = `⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.`;
     } else if (total < 60) {
-      rationale = `Outdated architecture or low maintenance velocity. Not worth spending engineering resources.`;
+      strategicVerdict = `🚫 DA IGNORARE / CESTINARE: Bassa trazione, codice obsoleto o architettura chiusa.`;
     }
+
+    const roadmap: string[] = [
+      `Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.`,
+      `Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).`,
+      `Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).`,
+      `Script di avvio istantaneo con 1 clic 'start-macos.command'.`
+    ];
 
     return {
       totalScore: total,
@@ -71,7 +86,12 @@ export class CodeEvaluator {
       codeCleanlinessScore: clean,
       communityMomentumScore: momentum,
       selfHostabilityScore: selfHost,
-      strategicRationale: rationale,
+      italianSummary: {
+        whatItDoes,
+        howItWorks,
+        strategicVerdict
+      },
+      strategicRationale: strategicVerdict,
       suggestedEnhancementRoadmap: roadmap
     };
   }

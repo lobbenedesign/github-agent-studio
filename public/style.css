@@ -136,12 +136,12 @@ body {
   gap: 10px;
 }
 .search-input { flex: 1; }
-.select-filter { width: 200px; }
+.select-filter { width: 170px; }
 
 .repos-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 12px;
   overflow-y: auto;
   padding-right: 4px;
@@ -155,6 +155,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 .repo-card:hover { border-color: var(--accent-color); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
@@ -201,6 +202,42 @@ body {
   line-height: 1.6;
 }
 
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.modal-card {
+  background: #0e1424;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+.modal-title { font-weight: 700; font-size: 15px; color: #fff; }
+.btn-close { background: transparent; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; }
+.btn-close:hover { color: #fff; }
+.modal-body { padding: 18px; overflow-y: auto; font-size: 12.5px; line-height: 1.6; color: var(--text-main); }
+
 /* TABLE */
 .table-container { padding: 14px; overflow-x: auto; }
 .bench-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -236,3 +273,5 @@ body {
 }
 .btn-primary { background: var(--accent-color); color: #000; font-weight: 600; }
 .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 12px var(--accent-glow); }
+.btn-secondary { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: var(--border-color); }
+.btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }

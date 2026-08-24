@@ -18,9 +18,10 @@ const benchmark = new GitHubInsightBenchmark();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
-console.log(`🔤 A-to-Z Repository Catalog & Crawler: Active`);
+console.log(`🔤 A-to-Z Universal Repository Catalog: Active (${indexer.getCatalog().length} Repos)`);
 console.log(`🔬 Deep Code & Forkability Evaluation Engine: Ready`);
 console.log(`📖 Clean Textual Wiki Archive Generator: Online`);
+console.log(`🌐 Live GitHub REST / GraphQL API Ingestion: Ready`);
 console.log(`======================================================\n`);
 
 const server = Bun.serve({
@@ -61,40 +62,38 @@ const server = Bun.serve({
         status: "online",
         version: "1.0.0-githubagent",
         totalIndexed: indexer.getCatalog().length,
-        wikiGenerator: "active"
+        wikiGenerator: "active",
+        liveScanner: "ready"
       }), { headers });
     }
 
-    // 2. List Repos (with A-Z letter, category, minScore, search query)
+    // 2. List Repos (with A-Z letter, category, minScore, search query, sortBy)
     if (url.pathname === "/api/repos/list" && req.method === "GET") {
       const letter = url.searchParams.get("letter") || undefined;
       const category = url.searchParams.get("category") || undefined;
       const minScore = url.searchParams.has("minScore") ? Number(url.searchParams.get("minScore")) : undefined;
       const q = url.searchParams.get("q") || undefined;
+      const sortBy = url.searchParams.get("sortBy") || "score";
 
-      const repos = indexer.getCatalog(letter, category, minScore, q);
+      const repos = indexer.getCatalog(letter, category, minScore, q, sortBy);
       return new Response(JSON.stringify(repos), { headers });
     }
 
-    // 3. Scan & Evaluate Custom GitHub URL
+    // 3. Scan & Evaluate Live GitHub URL
     if (url.pathname === "/api/repos/scan" && req.method === "POST") {
       try {
         let body: any = {};
         try { body = await req.json(); } catch {}
-        const repoUrl = body.url || "https://github.com/vllm-project/vllm";
-        const stars = Number(body.stars) || 34000;
-        const forks = Number(body.forks) || 4500;
-        const language = body.language || "Python";
-        const description = body.description || "A high-throughput and memory-efficient inference and serving engine for LLMs with PagedAttention.";
+        const repoUrlOrName = body.url || "https://github.com/vllm-project/vllm";
 
-        const evaluated = indexer.evaluateCustomRepo(repoUrl, stars, forks, language, description);
+        const evaluated = await indexer.scanAndAddLiveRepo(repoUrlOrName);
         return new Response(JSON.stringify(evaluated), { headers });
       } catch (e: any) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
       }
     }
 
-    // 4. Generate Textual Wiki Archive (.md)
+    // 4. Generate Clean Textual Wiki Archive (.md)
     if (url.pathname === "/api/wiki/export" && req.method === "GET") {
       const catalog = indexer.getCatalog();
       const wikiMarkdown = wikiGen.generateWikiMarkdown(catalog);
