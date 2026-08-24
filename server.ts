@@ -1,11 +1,12 @@
 #!/usr/bin/env bun
 /**
  * 🐙 GITHUB-AGENT STUDIO SERVER (v1.0.0)
- * Universal A-to-Z GitHub Repository Intelligence & Forkability Studio
+ * Universal A-to-Z GitHub Repository Intelligence, Version Tracker & Daily Daemon
  */
 
 import { RepoIndexer } from "./src/repo_indexer";
 import { WikiGenerator } from "./src/wiki_generator";
+import { DailyCronScheduler } from "./src/daily_cron_scheduler";
 import { GitHubInsightBenchmark } from "./src/competitor_benchmark";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -14,14 +15,15 @@ const PORT = Number(process.env.PORT) || 3011;
 
 const indexer = new RepoIndexer();
 const wikiGen = new WikiGenerator();
+const scheduler = new DailyCronScheduler(indexer);
 const benchmark = new GitHubInsightBenchmark();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
 console.log(`🔤 A-to-Z Universal Repository Catalog: Active (${indexer.getCatalog().length} Repos)`);
-console.log(`🔬 Deep Code & Forkability Evaluation Engine: Ready`);
+console.log(`🔄 Version Delta & Release Tracker: Online`);
+console.log(`⏰ Daily 24-Hour Automated Crawler Daemon: Running`);
 console.log(`📖 Clean Textual Wiki Archive Generator: Online`);
-console.log(`🌐 Live GitHub REST / GraphQL API Ingestion: Ready`);
 console.log(`======================================================\n`);
 
 const server = Bun.serve({
@@ -62,8 +64,8 @@ const server = Bun.serve({
         status: "online",
         version: "1.0.0-githubagent",
         totalIndexed: indexer.getCatalog().length,
-        wikiGenerator: "active",
-        liveScanner: "ready"
+        daemon: "active-24h",
+        wikiGenerator: "active"
       }), { headers });
     }
 
@@ -93,7 +95,21 @@ const server = Bun.serve({
       }
     }
 
-    // 4. Generate Clean Textual Wiki Archive (.md)
+    // 4. Daily Sync Telemetry & Manual Trigger
+    if (url.pathname === "/api/sync/telemetry" && req.method === "GET") {
+      return new Response(JSON.stringify(scheduler.getTelemetry()), { headers });
+    }
+
+    if (url.pathname === "/api/sync/run" && req.method === "POST") {
+      const telemetry = await scheduler.runDailySync();
+      return new Response(JSON.stringify(telemetry), { headers });
+    }
+
+    if (url.pathname === "/api/sync/deltas" && req.method === "GET") {
+      return new Response(JSON.stringify(indexer.versionTracker.getAllDeltas()), { headers });
+    }
+
+    // 5. Generate Clean Textual Wiki Archive (.md)
     if (url.pathname === "/api/wiki/export" && req.method === "GET") {
       const catalog = indexer.getCatalog();
       const wikiMarkdown = wikiGen.generateWikiMarkdown(catalog);
@@ -103,7 +119,7 @@ const server = Bun.serve({
       }), { headers });
     }
 
-    // 5. 5-Competitor Matrix
+    // 6. 5-Competitor Matrix
     if (url.pathname === "/api/competitors" && req.method === "GET") {
       return new Response(JSON.stringify(benchmark.getComparison()), { headers });
     }

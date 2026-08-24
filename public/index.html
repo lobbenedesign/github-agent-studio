@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitHub Agent Studio — A-Z Repository Intelligence & Forkability Classifier</title>
+  <title>GitHub Agent Studio — A-Z Repository Intelligence, Version Tracker & Daily Daemon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -18,19 +18,20 @@
           <span class="logo-icon">🐙</span>
           <div class="logo-text">
             <span class="logo-title">GitHub Agent Studio</span>
-            <span class="logo-badge">Universal A-Z Intelligence v1.0</span>
+            <span class="logo-badge">Daily Intelligence Daemon v1.0</span>
           </div>
         </div>
         <div class="topbar-chips">
-          <span class="chip chip-atoz" id="chip-repo-count">📚 19 Repos Indexed</span>
+          <span class="chip chip-atoz" id="chip-repo-count">📚 20 Repos Indexed</span>
+          <span class="chip chip-cron" id="chip-cron-status" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">⏰ Daily 24h Daemon: Active</span>
           <span class="chip chip-fork">🚀 Forkability AI Engine</span>
-          <span class="chip chip-wiki">📖 Textual Wiki Generator</span>
           <span class="chip chip-competitors">📊 5 Competitors Tracked</span>
         </div>
       </div>
       <div class="topbar-right">
         <nav class="topbar-tabs">
           <button class="nav-tab active" data-tab="catalog">🔤 A-Z Repo Catalog</button>
+          <button class="nav-tab" data-tab="radar">⏰ Daily Sync & Version Radar</button>
           <button class="nav-tab" data-tab="wiki">📖 Textual Wiki Archive</button>
           <button class="nav-tab" data-tab="scanner">🔍 Deep Live Scanner</button>
           <button class="nav-tab" data-tab="competitors">📊 5 Competitor Matrix</button>
@@ -69,6 +70,7 @@
             </select>
             <select id="select-sort-filter" class="form-control select-filter">
               <option value="score">Sort: Strategic Score ↓</option>
+              <option value="delta">Sort: Fastest Growing (24h Stars) 🔥</option>
               <option value="stars">Sort: Most Stars ★ ↓</option>
               <option value="forks">Sort: Most Forks ⑂ ↓</option>
               <option value="name">Sort: Name A-Z ↑</option>
@@ -82,7 +84,51 @@
         </div>
       </section>
 
-      <!-- TAB 2: TEXTUAL WIKI ARCHIVE -->
+      <!-- TAB 2: DAILY SYNC & VERSION RADAR -->
+      <section id="tab-radar" class="tab-pane">
+        <div class="catalog-layout">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">⏰ 24-Hour Autonomous Crawler Telemetry</span>
+              <button class="btn btn-primary" id="btn-trigger-sync">⚡ Force Daily Sync Now</button>
+            </div>
+            <div style="padding: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Daemon Status</div>
+                <div style="font-size: 14px; font-weight: 700; color: #4ade80; margin-top: 4px;">🟢 24h Cron Active</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Tracked Repos</div>
+                <div style="font-size: 14px; font-weight: 700; color: #38bdf8; margin-top: 4px;" id="stat-total-scanned">20 Repositories</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">New Discovered Today</div>
+                <div style="font-size: 14px; font-weight: 700; color: #c084fc; margin-top: 4px;" id="stat-new-discovered">+2 New Repos</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Version Updates Found</div>
+                <div style="font-size: 14px; font-weight: 700; color: #fbbf24; margin-top: 4px;" id="stat-version-updates">12 Releases Tracked</div>
+              </div>
+            </div>
+            <div style="padding: 0 16px 16px;">
+              <span style="font-size: 12px; font-weight: 600; color: #e5e7eb; display: block; margin-bottom: 8px;">📝 Live Daemon Logs:</span>
+              <pre class="terminal-box" id="daemon-logs-box" style="max-height: 120px;">[Daemon] Initializing daily cron cycle...</pre>
+            </div>
+          </div>
+
+          <!-- Version Deltas Feed -->
+          <div class="panel" style="flex: 1;">
+            <div class="panel-header">
+              <span class="panel-title">🔄 Tracked Version Releases & Commit Diff History</span>
+            </div>
+            <div class="repos-grid" id="deltas-grid-container" style="padding: 14px;">
+              <!-- Dynamically populated version deltas -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: TEXTUAL WIKI ARCHIVE -->
       <section id="tab-wiki" class="tab-pane">
         <div class="panel" style="height: 100%;">
           <div class="panel-header">
@@ -96,7 +142,7 @@
         </div>
       </section>
 
-      <!-- TAB 3: DEEP LIVE SCANNER -->
+      <!-- TAB 4: DEEP LIVE SCANNER -->
       <section id="tab-scanner" class="tab-pane">
         <div class="panel" style="max-width: 850px; margin: 0 auto;">
           <div class="panel-header">
@@ -115,7 +161,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: 5 COMPETITOR BENCHMARK -->
+      <!-- TAB 5: 5 COMPETITOR BENCHMARK -->
       <section id="tab-competitors" class="tab-pane">
         <div class="panel" style="height: 100%;">
           <div class="panel-header">

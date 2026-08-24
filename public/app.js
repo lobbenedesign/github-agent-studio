@@ -1,7 +1,7 @@
 /**
  * 🐙 GITHUB-AGENT STUDIO CLIENT SCRIPT
  * Handles A-Z Filtering, Live Sorting, Deep Repo Inspection Modal,
- * Textual Wiki Export, and Live Public GitHub API Scanner.
+ * Textual Wiki Export, Live Public GitHub API Scanner, and 24h Daemon Radar.
  */
 
 let activeLetter = "ALL";
@@ -14,8 +14,10 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFilters();
   setupScanner();
   setupModal();
+  setupDaemonSync();
   fetchCatalog();
   fetchWikiArchive();
+  fetchDaemonTelemetry();
   fetchCompetitorMatrix();
 });
 
@@ -88,7 +90,10 @@ async function fetchCatalog() {
       card.innerHTML = `
         <div class="repo-header">
           <div>
-            <div class="repo-title"><a href="${r.url}" target="_blank" onclick="event.stopPropagation()">${r.name}</a></div>
+            <div class="repo-title">
+              <a href="${r.url}" target="_blank" onclick="event.stopPropagation()">${r.name}</a>
+              <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); margin-left: 6px;">${r.currentVersion || 'v1.0'}</span>
+            </div>
             <div class="repo-author">${r.fullName} • <span style="color: #38bdf8;">${r.category}</span></div>
           </div>
           <span class="repo-badge-score">${r.scoreCard.totalScore}/100</span>
@@ -98,7 +103,7 @@ async function fetchCatalog() {
           Verdict: ${r.scoreCard.recommendation}
         </div>
         <div class="repo-meta">
-          <span>★ ${r.stars.toLocaleString()} | ⑂ ${r.forks.toLocaleString()}</span>
+          <span>★ ${r.stars.toLocaleString()} <span style="color: #34d399; font-weight: 700;">(+${r.starDelta24h} 24h)</span> | ⑂ ${r.forks.toLocaleString()}</span>
           <span>${r.language}</span>
         </div>
       `;
@@ -134,7 +139,7 @@ function openRepoModal(r) {
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
       <div>
         <a href="${r.url}" target="_blank" style="color: #38bdf8; font-weight: 700; font-size: 14px;">🔗 ${r.url}</a><br>
-        <span style="font-size: 11px; color: var(--text-muted);">Author: <strong>${r.owner}</strong> • License: <strong>${r.license}</strong> • Issues: <strong>${r.openIssues}</strong></span>
+        <span style="font-size: 11px; color: var(--text-muted);">Author: <strong>${r.owner}</strong> • Current Version: <strong>${r.currentVersion || 'v1.0'}</strong> • License: <strong>${r.license}</strong></span>
       </div>
       <span class="repo-badge-score" style="font-size: 14px; padding: 4px 12px;">${r.scoreCard.totalScore} / 100</span>
     </div>
@@ -167,7 +172,69 @@ function openRepoModal(r) {
   modal.style.display = "flex";
 }
 
-// 4. Wiki Export
+// 4. Daily Daemon & Version Radar
+function setupDaemonSync() {
+  const btnSync = document.getElementById("btn-trigger-sync");
+  btnSync?.addEventListener("click", async () => {
+    btnSync.textContent = "⚡ Running Daily Scan & Version Check...";
+    try {
+      const res = await fetch("/api/sync/run", { method: "POST" });
+      const telemetry = await res.json();
+      renderTelemetry(telemetry);
+      fetchCatalog();
+      fetchWikiArchive();
+      fetchDeltas();
+      btnSync.textContent = "⚡ Force Daily Sync Now";
+    } catch {
+      btnSync.textContent = "⚡ Force Daily Sync";
+    }
+  });
+}
+
+async function fetchDaemonTelemetry() {
+  try {
+    const res = await fetch("/api/sync/telemetry");
+    const telemetry = await res.json();
+    renderTelemetry(telemetry);
+    fetchDeltas();
+  } catch {}
+}
+
+function renderTelemetry(t) {
+  document.getElementById("stat-total-scanned").textContent = `${t.totalReposScanned} Repositories`;
+  document.getElementById("stat-new-discovered").textContent = `+${t.newReposDiscovered} New Repos`;
+  document.getElementById("stat-version-updates").textContent = `${t.versionUpdatesFound} Releases Tracked`;
+  document.getElementById("daemon-logs-box").textContent = t.recentLogs.join("\n");
+}
+
+async function fetchDeltas() {
+  const container = document.getElementById("deltas-grid-container");
+  if (!container) return;
+
+  try {
+    const res = await fetch("/api/sync/deltas");
+    const deltas = await res.json();
+
+    container.innerHTML = "";
+    deltas.forEach(d => {
+      const card = document.createElement("div");
+      card.className = "repo-card repo-card-highlight";
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="color: #38bdf8;">${d.repoFullName}</strong>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: #4ade80;">Version: ${d.latestVersion}</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">${d.changelogSummary}</div>
+        <div style="font-size: 11px; color: #fbbf24; border-top: 1px solid var(--border-color); padding-top: 6px;">
+          Stars: ${d.currentStars} (+${d.starDelta24h} in 24h) • Checked: ${d.detectedAt.slice(11, 16)}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch {}
+}
+
+// 5. Wiki Export
 async function fetchWikiArchive() {
   const terminal = document.getElementById("wiki-markdown-preview");
   const btnCopy = document.getElementById("btn-copy-wiki");
@@ -194,7 +261,7 @@ async function fetchWikiArchive() {
   } catch {}
 }
 
-// 5. Scanner
+// 6. Scanner
 function setupScanner() {
   const btnScan = document.getElementById("btn-run-scan");
   const resultBox = document.getElementById("scan-result-box");
@@ -227,13 +294,14 @@ function setupScanner() {
       btnScan.textContent = "🔬 Query GitHub API, Read Code & Evaluate";
       fetchCatalog();
       fetchWikiArchive();
+      fetchDaemonTelemetry();
     } catch {
       btnScan.textContent = "🔬 Run Evaluation";
     }
   });
 }
 
-// 6. Competitors
+// 7. Competitors
 async function fetchCompetitorMatrix() {
   const container = document.getElementById("competitor-table-container");
   if (!container) return;

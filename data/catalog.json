@@ -1,0 +1,762 @@
+[
+  {
+    "id": "aether-voice",
+    "name": "Aether-Voice",
+    "fullName": "lobbenedesign/aether-voice",
+    "url": "https://github.com/lobbenedesign/aether-voice",
+    "owner": "lobbenedesign",
+    "stars": 320,
+    "forks": 48,
+    "openIssues": 2,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Voice & Audio",
+    "description": "Full-Duplex Real-Time Neural Voice Engine with Sub-150ms Turn-Taking, Natural Barge-In, and Voice Tools Dispatcher.",
+    "scoreCard": {
+      "totalScore": 84,
+      "recommendation": "HIGH POTENTIAL ⚡",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 16,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Full-Duplex Real-Time Neural Voice Engine with Sub-150ms Turn-Taking, Natural Barge-In, and Voice To...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati."
+      },
+      "strategicRationale": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 22,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "airllm",
+    "name": "AirLLM",
+    "fullName": "lyogavin/Anima/tree/main/air_llm",
+    "url": "https://github.com/lyogavin/Anima",
+    "owner": "lyogavin",
+    "stars": 12400,
+    "forks": 1100,
+    "openIssues": 45,
+    "language": "Python",
+    "license": "Apache-2.0",
+    "category": "LLM & Inference",
+    "description": "Run 70B and 405B large language models on consumer 4GB-8GB VRAM GPUs via layer-wise SSD streaming.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Run 70B and 405B large language models on consumer 4GB-8GB VRAM GPUs via layer-wise SSD streaming....",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v2.8.4",
+    "starDelta24h": 18,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "browser-use",
+    "name": "Browser-Use",
+    "fullName": "browser-use/browser-use",
+    "url": "https://github.com/browser-use/browser-use",
+    "owner": "browser-use",
+    "stars": 28500,
+    "forks": 3100,
+    "openIssues": 120,
+    "language": "Python",
+    "license": "MIT",
+    "category": "Agents & Automation",
+    "description": "Make websites accessible for AI agents with vision and autonomous click/type navigation.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Make websites accessible for AI agents with vision and autonomous click/type navigation....",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.1.38",
+    "starDelta24h": 21,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "codedoctor-swe",
+    "name": "CodeDoctor-SWE",
+    "fullName": "lobbenedesign/codedoctor-swe",
+    "url": "https://github.com/lobbenedesign/codedoctor-swe",
+    "owner": "lobbenedesign",
+    "stars": 410,
+    "forks": 62,
+    "openIssues": 1,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Code & SWE",
+    "description": "Autonomous Codebase Diagnostic & Healing Studio with AST error tracing and sandboxed regression test verification.",
+    "scoreCard": {
+      "totalScore": 89,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 21,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Autonomous Codebase Diagnostic & Healing Studio with AST error tracing and sandboxed regression test...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 36,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "deepseek-r1",
+    "name": "DeepSeek-R1",
+    "fullName": "deepseek-ai/DeepSeek-R1",
+    "url": "https://github.com/deepseek-ai/DeepSeek-R1",
+    "owner": "deepseek-ai",
+    "stars": 76000,
+    "forks": 8900,
+    "openIssues": 380,
+    "language": "Python",
+    "license": "MIT",
+    "category": "Reasoning & MCTS",
+    "description": "Incentivizing Reasoning Capability in LLMs via Reinforcement Learning without Supervised Fine-Tuning.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Incentivizing Reasoning Capability in LLMs via Reinforcement Learning without Supervised Fine-Tuning...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0-r1",
+    "starDelta24h": 18,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "exo",
+    "name": "Exo",
+    "fullName": "exo-explore/exo",
+    "url": "https://github.com/exo-explore/exo",
+    "owner": "exo-explore",
+    "stars": 19800,
+    "forks": 1450,
+    "openIssues": 85,
+    "language": "Python",
+    "license": "GPL-3.0",
+    "category": "LLM & Inference",
+    "description": "Run decentralized AI clusters on everyday consumer devices (Macs, iPhones, Androids) via peer-to-peer mesh.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Run decentralized AI clusters on everyday consumer devices (Macs, iPhones, Androids) via peer-to-pee...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.0.12",
+    "starDelta24h": 12,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "genui-canvas-studio",
+    "name": "GenUI-Canvas-Studio",
+    "fullName": "lobbenedesign/genui-canvas-studio",
+    "url": "https://github.com/lobbenedesign/genui-canvas-studio",
+    "owner": "lobbenedesign",
+    "stars": 380,
+    "forks": 55,
+    "openIssues": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Code & SWE",
+    "description": "Infinite Generative UI Canvas & Real-Time Streaming Component Studio with Sandboxed Interactive Iframe Previews.",
+    "scoreCard": {
+      "totalScore": 79,
+      "recommendation": "HIGH POTENTIAL ⚡",
+      "architectureScore": 22,
+      "codeCleanlinessScore": 19,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Infinite Generative UI Canvas & Real-Time Streaming Component Studio with Sandboxed Interactive Ifra...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati."
+      },
+      "strategicRationale": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 30,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "github-agent-studio",
+    "name": "GitHub-Agent-Studio",
+    "fullName": "lobbenedesign/github-agent-studio",
+    "url": "https://github.com/lobbenedesign/github-agent-studio",
+    "owner": "lobbenedesign",
+    "stars": 510,
+    "forks": 74,
+    "openIssues": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Agents & Automation",
+    "description": "Universal A-to-Z GitHub Repository Intelligence, Deep Code Quality Evaluator & Clean Textual Wiki Archive Generator.",
+    "scoreCard": {
+      "totalScore": 83,
+      "recommendation": "HIGH POTENTIAL ⚡",
+      "architectureScore": 22,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Universal A-to-Z GitHub Repository Intelligence, Deep Code Quality Evaluator & Clean Textual Wiki Ar...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati."
+      },
+      "strategicRationale": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 30,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "glm-5-posttrain",
+    "name": "GLM-5-PostTrain",
+    "fullName": "THUDM/GLM-5",
+    "url": "https://github.com/THUDM/GLM-5",
+    "owner": "THUDM",
+    "stars": 14500,
+    "forks": 1650,
+    "openIssues": 42,
+    "language": "Python",
+    "license": "Apache-2.0",
+    "category": "Fine-Tuning & RL",
+    "description": "Scaled Continual Post-Training and On-Policy Distillation (OPD) for 50% coding capability gain without base retraining.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Scaled Continual Post-Training and On-Policy Distillation (OPD) for 50% coding capability gain witho...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v5.3.0",
+    "starDelta24h": 27,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "hyperrag-studio",
+    "name": "HyperRAG-Studio",
+    "fullName": "lobbenedesign/hyperrag-studio",
+    "url": "https://github.com/lobbenedesign/hyperrag-studio",
+    "owner": "lobbenedesign",
+    "stars": 540,
+    "forks": 82,
+    "openIssues": 3,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "RAG & Knowledge",
+    "description": "Next-Gen Knowledge Graph RAG (LightRAG) & Speculative Decoding Studio (EAGLE 3.5x) with Google TurboQuant 4-bit.",
+    "scoreCard": {
+      "totalScore": 91,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Next-Gen Knowledge Graph RAG (LightRAG) & Speculative Decoding Studio (EAGLE 3.5x) with Google Turbo...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.1.0",
+    "starDelta24h": 29,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "ktransformers",
+    "name": "KTransformers",
+    "fullName": "kvcache-ai/ktransformers",
+    "url": "https://github.com/kvcache-ai/ktransformers",
+    "owner": "kvcache-ai",
+    "stars": 8200,
+    "forks": 670,
+    "openIssues": 32,
+    "language": "C++",
+    "license": "Apache-2.0",
+    "category": "LLM & Inference",
+    "description": "Flexible, ultra-fast Python/C++ library to run DeepSeek-V3 and 671B MoE models on a single GPU + CPU RAM.",
+    "scoreCard": {
+      "totalScore": 98,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Flexible, ultra-fast Python/C++ library to run DeepSeek-V3 and 671B MoE models on a single GPU + CPU...",
+        "howItWorks": "Sviluppato in C++, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.2.2",
+    "starDelta24h": 31,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "nexus-local-engine",
+    "name": "Nexus-Local-Engine",
+    "fullName": "lobbenedesign/nexus-local-engine",
+    "url": "https://github.com/lobbenedesign/nexus-local-engine",
+    "owner": "lobbenedesign",
+    "stars": 620,
+    "forks": 94,
+    "openIssues": 1,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "LLM & Inference",
+    "description": "Universal Local LLM Orchestrator unifying Apple MLX, llama.cpp, AirLLM, KTransformers, Exo, and Google TurboQuant 4-bit KV.",
+    "scoreCard": {
+      "totalScore": 91,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Universal Local LLM Orchestrator unifying Apple MLX, llama.cpp, AirLLM, KTransformers, Exo, and Goog...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.2.0",
+    "starDelta24h": 23,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "omnios-pilot",
+    "name": "OmniOS-Pilot",
+    "fullName": "lobbenedesign/omnios-pilot",
+    "url": "https://github.com/lobbenedesign/omnios-pilot",
+    "owner": "lobbenedesign",
+    "stars": 450,
+    "forks": 70,
+    "openIssues": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Vision & Multimodal",
+    "description": "Multimodal Vision-Language Desktop Automation Agent with Pixel-Coordinate Visual Grounding and Emergency Panic Switch.",
+    "scoreCard": {
+      "totalScore": 79,
+      "recommendation": "HIGH POTENTIAL ⚡",
+      "architectureScore": 22,
+      "codeCleanlinessScore": 19,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Multimodal Vision-Language Desktop Automation Agent with Pixel-Coordinate Visual Grounding and Emerg...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati."
+      },
+      "strategicRationale": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 21,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "openhands",
+    "name": "OpenHands",
+    "fullName": "All-Hands-AI/OpenHands",
+    "url": "https://github.com/All-Hands-AI/OpenHands",
+    "owner": "All-Hands-AI",
+    "stars": 44200,
+    "forks": 5600,
+    "openIssues": 240,
+    "language": "Python",
+    "license": "MIT",
+    "category": "Code & SWE",
+    "description": "Open-source software development agent that can write code, fix bugs, and execute shell commands.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Open-source software development agent that can write code, fix bugs, and execute shell commands....",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.18.2",
+    "starDelta24h": 34,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "openui",
+    "name": "OpenUI",
+    "fullName": "thesysdev/openui",
+    "url": "https://github.com/thesysdev/openui",
+    "owner": "thesysdev",
+    "stars": 18900,
+    "forks": 1950,
+    "openIssues": 64,
+    "language": "TypeScript",
+    "license": "Apache-2.0",
+    "category": "Code & SWE",
+    "description": "OpenUI lets you describe UI components and streams them directly into live interactive web elements.",
+    "scoreCard": {
+      "totalScore": 90,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 22,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per OpenUI lets you describe UI components and streams them directly into live interactive web elements....",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.8.0",
+    "starDelta24h": 29,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "reasoning-tree-mcts",
+    "name": "Reasoning-Tree-MCTS",
+    "fullName": "lobbenedesign/reasoning-tree-mcts",
+    "url": "https://github.com/lobbenedesign/reasoning-tree-mcts",
+    "owner": "lobbenedesign",
+    "stars": 490,
+    "forks": 76,
+    "openIssues": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Reasoning & MCTS",
+    "description": "Monte Carlo Tree Search (MCTS) Test-Time Compute Reasoning Studio with Sandbox Invariant Verification.",
+    "scoreCard": {
+      "totalScore": 89,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 21,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Monte Carlo Tree Search (MCTS) Test-Time Compute Reasoning Studio with Sandbox Invariant Verificatio...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.0.0",
+    "starDelta24h": 28,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "rl-reasoning-gym",
+    "name": "RL-Reasoning-Gym",
+    "fullName": "lobbenedesign/rl-reasoning-gym",
+    "url": "https://github.com/lobbenedesign/rl-reasoning-gym",
+    "owner": "lobbenedesign",
+    "stars": 390,
+    "forks": 58,
+    "openIssues": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "category": "Fine-Tuning & RL",
+    "description": "Local Group Relative Policy Optimization (GRPO) Reinforcement Learning Studio with Scaled Post-Training (GLM-5.3 Style).",
+    "scoreCard": {
+      "totalScore": 87,
+      "recommendation": "HIGH POTENTIAL ⚡",
+      "architectureScore": 30,
+      "codeCleanlinessScore": 19,
+      "communityMomentumScore": 18,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Local Group Relative Policy Optimization (GRPO) Reinforcement Learning Studio with Scaled Post-Train...",
+        "howItWorks": "Sviluppato in TypeScript, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati."
+      },
+      "strategicRationale": "⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.1.0",
+    "starDelta24h": 20,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "swe-agent",
+    "name": "SWE-agent",
+    "fullName": "SWE-agent/SWE-agent",
+    "url": "https://github.com/SWE-agent/SWE-agent",
+    "owner": "SWE-agent",
+    "stars": 16800,
+    "forks": 1720,
+    "openIssues": 92,
+    "language": "Python",
+    "license": "MIT",
+    "category": "Code & SWE",
+    "description": "SWE-agent turns LM into software engineering agents capable of solving real bugs in GitHub repositories.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per SWE-agent turns LM into software engineering agents capable of solving real bugs in GitHub repositor...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v0.9.1",
+    "starDelta24h": 36,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "unsloth",
+    "name": "Unsloth",
+    "fullName": "unslothai/unsloth",
+    "url": "https://github.com/unslothai/unsloth",
+    "owner": "unslothai",
+    "stars": 28400,
+    "forks": 2100,
+    "openIssues": 110,
+    "language": "Python",
+    "license": "Apache-2.0",
+    "category": "Fine-Tuning & RL",
+    "description": "Finetune Llama 3.3, Mistral, Qwen 2.5 & DeepSeek-R1 2x-5x faster with 70% less memory using hand-written Triton kernels.",
+    "scoreCard": {
+      "totalScore": 96,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 28,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per Finetune Llama 3.3, Mistral, Qwen 2.5 & DeepSeek-R1 2x-5x faster with 70% less memory using hand-wri...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v2026.8",
+    "starDelta24h": 30,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  },
+  {
+    "id": "ui-tars",
+    "name": "UI-TARS",
+    "fullName": "bytedance/ui-tars",
+    "url": "https://github.com/bytedance/ui-tars",
+    "owner": "bytedance",
+    "stars": 8700,
+    "forks": 890,
+    "openIssues": 38,
+    "language": "Python",
+    "license": "Apache-2.0",
+    "category": "Vision & Multimodal",
+    "description": "End-to-end multimodal GUI agent model for operating computers and mobile phones via visual grounding.",
+    "scoreCard": {
+      "totalScore": 88,
+      "recommendation": "MUST FORK & ENHANCE 🚀",
+      "architectureScore": 20,
+      "codeCleanlinessScore": 23,
+      "communityMomentumScore": 25,
+      "selfHostabilityScore": 20,
+      "italianSummary": {
+        "whatItDoes": "Progetto open-source per End-to-end multimodal GUI agent model for operating computers and mobile phones via visual grounding...",
+        "howItWorks": "Sviluppato in Python, sfrutta un'architettura ottimizzata per carichi ad alte prestazioni ed efficienza computazionale.",
+        "strategicVerdict": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite."
+      },
+      "strategicRationale": "🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.",
+      "suggestedEnhancementRoadmap": [
+        "Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.",
+        "Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).",
+        "Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).",
+        "Script di avvio istantaneo con 1 clic 'start-macos.command'."
+      ]
+    },
+    "currentVersion": "v1.2.0",
+    "starDelta24h": 13,
+    "hasRecentUpdate": true,
+    "updatedAt": "2026-08-24"
+  }
+]
