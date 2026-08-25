@@ -35,31 +35,53 @@ export class RepoIndexer {
   private apiClient = new GitHubApiClient();
   public versionTracker = new VersionTracker();
   private catalog: GitHubRepoItem[] = [];
+  private seedFullNames: Set<string> = new Set();
   private dbPath = join(__dirname, "..", "data", "catalog.json");
 
   constructor() {
     this.loadCatalog();
   }
 
+  /**
+   * The ~20 hand-curated entries in seedCatalog() are source code — every
+   * fix to a description/score/language in this file is supposed to take
+   * effect the next time the server starts. The previous version of this
+   * method cached the ENTIRE computed catalog (including scores computed
+   * by CodeEvaluator) to `data/catalog.json` and, if that file existed,
+   * loaded it wholesale instead of recomputing — so a fix to the scoring
+   * formula or a seed description silently had no effect until someone
+   * manually deleted the cache file. This happened for real, twice, in the
+   * same session (see CHANGELOG.md) — the exact same bug pattern recurring
+   * because the cache was still being written even after the first fix.
+   *
+   * Correct design: seedCatalog() always runs fresh (cheap — 21 items,
+   * pure synchronous computation, no network). The JSON file is now only
+   * for repos a user explicitly added via `scanAndAddLiveRepo` (POST
+   * /api/repos/scan) — those aren't in source code, so they DO need to
+   * persist. Loaded separately and merged in, never replacing the seed.
+   */
   private loadCatalog() {
     const dataDir = join(__dirname, "..", "data");
     if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 
+    this.seedCatalog();
+    this.seedFullNames = new Set(this.catalog.map((c) => c.fullName.toLowerCase()));
+
     if (existsSync(this.dbPath)) {
       try {
         const raw = readFileSync(this.dbPath, "utf-8");
-        this.catalog = JSON.parse(raw);
-        if (this.catalog.length > 0) return;
+        const persisted: GitHubRepoItem[] = JSON.parse(raw);
+        const userAdded = persisted.filter((p) => !this.seedFullNames.has(p.fullName.toLowerCase()));
+        this.catalog.push(...userAdded);
       } catch {}
     }
-
-    this.seedCatalog();
-    this.saveCatalog();
   }
 
+  /** Persists only what isn't already in seedCatalog() — i.e. user-added scans. */
   private saveCatalog() {
     try {
-      writeFileSync(this.dbPath, JSON.stringify(this.catalog, null, 2), "utf-8");
+      const userAdded = this.catalog.filter((c) => !this.seedFullNames.has(c.fullName.toLowerCase()));
+      writeFileSync(this.dbPath, JSON.stringify(userAdded, null, 2), "utf-8");
     } catch {}
   }
 
@@ -352,7 +374,7 @@ export class RepoIndexer {
       // roadmap ("integrate into Nexus Local Engine" etc.) — it makes no
       // sense attached to bun, DeepSeek-R1, or any other external repo also
       // hand-seeded here for A-Z browsing.
-      const score = this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description, "", r.fullName.startsWith("lobbenedesign/"));
+      const score = this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description, "", r.fullName.startsWith("lobbenedesign/"), r.openIssues ?? null);
       // seed baseline: no real "yesterday" snapshot exists yet for a freshly-booted
       // catalog, so previousStars starts equal to stars (delta 0) until the cron
       // scheduler's real GitHub polling establishes an actual history.
@@ -421,7 +443,7 @@ export class RepoIndexer {
 
     const cat = detectCategory(meta.description, meta.topics);
 
-    const scoreCard = this.evaluator.evaluateRepo(meta.name, meta.stars, meta.forks, meta.language, meta.description, meta.readmeExcerpt);
+    const scoreCard = this.evaluator.evaluateRepo(meta.name, meta.stars, meta.forks, meta.language, meta.description, meta.readmeExcerpt, false, meta.openIssues ?? null, meta.updatedAt ?? null);
 
     const versionTag = "v1.0.0";
     // Same reasoning as the seed catalog: no prior snapshot exists for a repo

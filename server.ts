@@ -35,22 +35,30 @@ const similarFinder = new SimilarRepoFinder();
 const repoDb = new RepoDatabase();
 const deepCrawler = new DeepCrawler(repoDb);
 
-// One-time real migration: rows crawled before scoring/category support
-// existed have NULL score columns forever otherwise. Cheap and synchronous
-// (no network), so it runs inline at boot rather than needing a separate command.
+// Real full rescore at boot: recomputes every row's score from its stored
+// real signals (stars/forks/issues/pushedAt) using the CURRENT formula in
+// code_evaluator.ts. Cheap synchronous math, no network — but importantly,
+// this means a scoring-formula change (like the coarse-buckets fix below)
+// actually reaches already-indexed repos, not just future crawls. Without
+// this, the ~30k repos indexed under the old formula would keep their old
+// scores forever and the "many exact 100/100 ties" problem would persist
+// for everything already in the database.
 (() => {
   const evaluator = new CodeEvaluator();
-  let totalBackfilled = 0;
+  let total = 0;
+  let offset = 0;
+  const BATCH = 5000;
   while (true) {
-    const unscored = repoDb.getUnscoredRepos(5000);
-    if (unscored.length === 0) break;
-    for (const r of unscored) {
-      const score = evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language || "", r.description || "", "", false);
+    const batch = repoDb.getAllReposForRescore(BATCH, offset);
+    if (batch.length === 0) break;
+    for (const r of batch) {
+      const score = evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language || "", r.description || "", "", false, r.openIssues, r.pushedAt);
       repoDb.backfillScore(r.fullName, detectCategory(r.description || "", []), score);
     }
-    totalBackfilled += unscored.length;
+    total += batch.length;
+    offset += BATCH;
   }
-  if (totalBackfilled > 0) console.log(`📐 Backfilled real scores for ${totalBackfilled} repos indexed before scoring existed.`);
+  if (total > 0) console.log(`📐 Rescored ${total} repos with the current scoring formula.`);
 })();
 const apiClientForVersions = new GitHubApiClient();
 
@@ -101,7 +109,7 @@ const server = Bun.serve({
       return new Response(JSON.stringify({
         status: "online",
         version: "1.0.0-githubagent",
-        totalIndexed: indexer.getCatalog().length,
+        totalIndexed: indexer.getCatalog().length + repoDb.count(),
         daemon: "active-24h",
         features: ["A-Z Index", "Fork Hunter", "Security Shield", "SQL Engine", "Wiki Generator"]
       }), { headers });
@@ -186,7 +194,13 @@ const server = Bun.serve({
       };
       merged.sort(cmp[sortBy] || cmp.score);
 
-      return new Response(JSON.stringify(merged.slice(0, limit)), { headers });
+      // Real total matching the current filters (curated.length already counts
+      // every curated match since indexer.getCatalog isn't paginated; dbResult.total
+      // is the real SQL COUNT(*) for the filtered repos.db query) — the UI's
+      // "N Repos Indexed" chip previously showed the page size (60), not this.
+      const totalMatching = curated.length + dbResult.total;
+
+      return new Response(JSON.stringify({ rows: merged.slice(0, limit), total: totalMatching }), { headers });
     }
 
     // 3. Scan & Evaluate Live GitHub URL
@@ -341,6 +355,22 @@ const server = Bun.serve({
       } catch (e: any) {
         return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
       }
+    }
+
+    // 7d. Real trend history for a repo — real snapshots recorded by the
+    // deep crawler each time it observed a real change in stars/forks/issues,
+    // not a synthetic/interpolated series. Sparse until the crawler has made
+    // multiple passes; that's the honest current state, not hidden.
+    if (url.pathname === "/api/repos/history" && req.method === "GET") {
+      const repo = url.searchParams.get("repo") || "";
+      const history = repoDb.getHistory(repo);
+      return new Response(JSON.stringify({
+        fullName: repo,
+        points: history,
+        note: history.length < 2
+          ? "Fewer than 2 real data points yet — the crawler records a new snapshot only when it re-observes this repo with a changed star/fork/issue count. Check back after the crawler completes another full pass."
+          : null
+      }), { headers });
     }
 
     return new Response("Not Found", { status: 404, headers });

@@ -125,7 +125,18 @@ export class DeepCrawler {
     }
 
     this.totalTicks++;
-    const partition = this.db.getNextPendingPartition();
+    let partition = this.db.getNextPendingPartition();
+    if (!partition) {
+      // Full sweep finished. Re-open every exhausted partition for another
+      // pass instead of idling forever — this is what actually produces new
+      // repo_snapshots rows over time (real trend data), not just a single
+      // frozen first-crawl. A repo whose stars/forks haven't changed since
+      // last time won't get a duplicate snapshot row (see recordSnapshotIfChanged).
+      const reopened = this.db.resetExhaustedPartitionsForResweep();
+      if (reopened > 0) {
+        partition = this.db.getNextPendingPartition();
+      }
+    }
     if (!partition) {
       this.lastTick = { partitionId: null, language: null, starRange: null, reposFound: 0, reposIngested: 0, totalCountForPartition: null, action: "no_pending_partitions", detail: "All seeded partitions exhausted or awaiting split." };
       return this.lastTick;
@@ -169,7 +180,9 @@ export class DeepCrawler {
         item.language || "",
         item.description || "",
         "",
-        false
+        false,
+        item.open_issues_count ?? null,
+        item.pushed_at ?? null
       );
       const result = this.db.upsertRepo({
         fullName: item.full_name,

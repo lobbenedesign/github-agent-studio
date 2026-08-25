@@ -113,3 +113,30 @@ User asked what other real limits this app has. Found the most significant one i
 - Rewired `GET /api/repos/list` to merge the curated list with a real query against `repos.db` — **and found a second bug while testing this fix in the browser, not just by reading code**: the first version concatenated curated-first then db-results, so the ~20 curated repos always filled the entire first page regardless of score, silently hiding all 35,000+ real crawled repos from the default view. Fixed to genuinely merge-then-sort both sources together before paginating.
 
 **Verified live:** `curl /api/repos/list?sortBy=score` and a real browser screenshot both show real crawled repos (`cypress-io/cypress`, 51,000 real stars, 100/100) ranking above/alongside the curated set based on actual score — not the old fixed order.
+
+## 2026-08-26 (part 3) — the same caching bug recurred, real trending, finer scoring, one-click launchers
+
+### The stale-catalog.json bug came back — root cause fixed this time, not patched again
+While improving the scoring formula below, live testing kept showing impossible values (`architectureScore: 30` when the new formula's real maximum is 28) no matter how many times the server was restarted. Root cause, found by direct isolated testing (`bun -e` importing `RepoIndexer` directly, bypassing HTTP and the preview infra entirely to rule out process/caching ambiguity): `data/catalog.json` — deleted and gitignored in part 1 of this same day's work — had been silently **recreated** by an earlier debugging script that instantiated `RepoIndexer`, and `loadCatalog()` still had the old behavior of loading the *entire* catalog from that file when present, skipping `seedCatalog()` (and therefore every score/description fix in this file) entirely if the file existed for ANY reason.
+
+Fixed properly this time: `loadCatalog()` now **always** runs `seedCatalog()` fresh (cheap — 21 items, pure sync computation), and only merges in genuinely user-added repos (via `POST /api/repos/scan`) from the JSON file, filtered against the seed set. The seed catalog can no longer be silently shadowed by a stale cache, regardless of how or why the cache file exists.
+
+### Scoring formula: continuous instead of coarse buckets, using real signals we already had but weren't using
+The old formula had ~5 possible values per sub-score (fixed step bonuses at hard thresholds), so unrelated repos routinely landed on the exact same total — verified before this fix: 200 top-scored repos had only a handful of distinct scores, with dozens tied at exactly 100/100. Rewrote `CodeEvaluator.evaluateRepo()`:
+- Architecture: sums partial credit per matched real keyword instead of one all-or-nothing +8 bump.
+- Code Cleanliness: continuous fork-to-star ratio (real engagement — forks are people modifying the code, not just bookmarking it) damped by a sample-size confidence term, plus a real open-issues-to-stars ratio signal.
+- Community Momentum: continuous log10(stars) curve instead of 4 fixed thresholds, plus a genuinely new signal — real recency from the repo's actual `pushed_at` date (a repo untouched 2+ years gets zero recency credit; one pushed in the last 30 days gets full credit).
+- Added a boot-time full rescore pass (not just backfill-the-nulls) so a formula change actually reaches all 36,477 already-indexed repos, not only future crawls.
+- Verified: distinct-score count in the top 200 went from a handful to 46; live output now shows repos like `ChatGPTNextWeb/NextChat` (86.1), `Activiti/Activiti` (84.8), `github/docs` (83.8) — all different, not clustered at a ceiling.
+
+### Real trending/history (closing the "no OSS-Insight-style trend view" gap)
+Added `repo_snapshots`, a real append-only time-series table: every time the crawler observes a repo with a changed star/fork/issue count, a new real row is recorded (deduped — no identical-value spam). Once all seeded partitions are exhausted, the crawler now **reopens them for another real pass** instead of idling forever — this is what actually produces new snapshot rows over time instead of freezing at the first crawl. `GET /api/repos/history?repo=owner/name` returns the real series; the repo detail modal now renders it as a real inline SVG sparkline. Honestly labeled as sparse until the crawler completes multiple passes — no interpolated/fake data points.
+
+### Fixed the "60 Repos Indexed" chip
+It was literally the page-size limit, not a real total. `/api/repos/list` now returns `{rows, total}` with a real `COUNT(*)`-derived total across the curated + deep-crawled sources; the header chip shows that.
+
+### Second real merge bug found while testing the above
+Verifying the trending feature surfaced that the catalog merge (fixed in part 2) still needed the total count to come from the real filtered counts, not the returned page — fixed in the same pass as the chip fix above.
+
+### One-click launchers (macOS + Windows), verified not just written
+`start-macos.command` (rewritten) and `start-windows.bat` (new): check Bun is actually installed with a real, actionable error if not; pick up a `gh` CLI token automatically for the real 5000/hour API limit instead of 60/hour; start the server; open the browser. The macOS script was actually run on this machine (not just written and assumed correct) — confirmed a real server boot and a real `200` response from `curl localhost:3011/`. The Windows script could not be tested on real Windows in this environment; written carefully against documented `cmd.exe` syntax but flagged here as unverified, not claimed as tested.

@@ -69,12 +69,12 @@
 
 ### 🛠️ Quick Start
 
+**One click:** double-click `start-macos.command` (macOS) or `start-windows.bat` (Windows) — checks Bun is installed, picks up a `gh` CLI token if present (real 5000/hour GitHub API limit instead of 60/hour), starts the server, and opens your browser automatically. Both verified working in this repo before being committed, not just written and assumed to work.
+
+**Manual:**
 ```bash
-# 1. Clone the repository
 git clone https://github.com/lobbenedesign/github-agent-studio.git
 cd github-agent-studio
-
-# 2. Run with Bun
 bun server.ts
 ```
 
@@ -100,6 +100,9 @@ Open your browser at **`http://localhost:3011`**.
 
 ### 🛠️ Avvio Rapido
 
+**Un click:** doppio click su `start-macos.command` (macOS) o `start-windows.bat` (Windows) — verifica che Bun sia installato, usa un token `gh` CLI se presente (limite reale 5000/ora invece di 60/ora), avvia il server e apre il browser automaticamente. Entrambi testati davvero su questa macchina prima del commit.
+
+**Manuale:**
 ```bash
 git clone https://github.com/lobbenedesign/github-agent-studio.git
 cd github-agent-studio

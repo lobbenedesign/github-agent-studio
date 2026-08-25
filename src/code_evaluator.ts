@@ -35,36 +35,77 @@ export class CodeEvaluator {
    *   advice with no bearing on the actual project. Deep-crawled repos get a
    *   generic, real, deterministic score/recommendation with no suite-specific roadmap.
    */
-  public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = "", isOwnSuite: boolean = false): RepoScoreCard {
+  public evaluateRepo(
+    name: string,
+    stars: number,
+    forks: number,
+    language: string,
+    description: string,
+    readmeText: string = "",
+    isOwnSuite: boolean = false,
+    openIssues: number | null = null,
+    pushedAt: string | null = null
+  ): RepoScoreCard {
     const combinedText = `${name} ${description} ${readmeText}`.toLowerCase();
 
-    // 1. Architecture & Innovation (0-30)
-    let arch = 20;
-    if (combinedText.includes("mcts") || combinedText.includes("grpo") || combinedText.includes("full-duplex") || combinedText.includes("vlm") || combinedText.includes("ast") || combinedText.includes("turboquant") || combinedText.includes("speculative")) {
-      arch += 8;
-    }
-    if (language === "Rust" || language === "TypeScript" || language === "C++") arch += 2;
-    arch = Math.min(30, arch);
+    // 1. Architecture & Innovation (0-30). Was a single +8 all-or-nothing
+    // keyword bump (only 3-4 possible outcomes); now sums partial credit
+    // per matched signal so two repos matching different numbers of real
+    // signals land at different scores instead of tying.
+    const archKeywords = ["mcts", "grpo", "full-duplex", "vlm", "ast", "turboquant", "speculative", "distributed", "streaming", "quantization", "compiler"];
+    const archMatches = archKeywords.filter((k) => combinedText.includes(k)).length;
+    let arch = 16 + Math.min(10, archMatches * 2.5);
+    if (language === "Rust" || language === "TypeScript" || language === "C++" || language === "Go" || language === "Zig") arch += 2;
+    arch = Math.min(30, Math.round(arch * 10) / 10);
 
-    // 2. Code Cleanliness & Test Coverage (0-25)
-    let clean = 16;
-    if (stars > 500) clean += 4;
-    if (forks > 50) clean += 3;
+    // 2. Code Cleanliness & real Engagement Signal (0-25). Replaced the
+    // fixed stars>500/forks>50 step bonuses with a continuous fork-to-star
+    // ratio: forks are people actually taking the code to modify it, a
+    // stronger "this codebase is worth building on" signal than raw stars
+    // (a passive bookmark). Ratio is naturally noisy for very-low-star
+    // repos, so it's damped by a real sample-size factor (more stars = more
+    // confidence in the ratio) instead of applied at full weight always.
+    const forkRatio = stars > 0 ? Math.min(1, forks / stars) : 0;
+    const sampleConfidence = Math.min(1, Math.log10(stars + 1) / 3); // ramps to 1 around ~1000 stars
+    let clean = 14 + forkRatio * 8 * sampleConfidence;
     if (combinedText.includes("test") || combinedText.includes("ci/cd") || combinedText.includes("workflow")) clean += 2;
-    clean = Math.min(25, clean);
+    // Real maintenance-activity signal from actual open issue count relative
+    // to stars: some open issues on a popular repo is normal/healthy
+    // (people are using it and reporting real things); a repo with stars
+    // but literally zero visible issue activity is more likely abandoned
+    // or issues-disabled than "perfect."
+    if (openIssues !== null && stars > 100) {
+      const issueRatio = openIssues / stars;
+      if (issueRatio > 0 && issueRatio < 0.15) clean += 1.5;
+    }
+    clean = Math.min(25, Math.round(clean * 10) / 10);
 
-    // 3. Community Momentum (0-25)
-    let momentum = 12;
-    if (stars > 5000) momentum = 25;
-    else if (stars > 1000) momentum = 22;
-    else if (stars > 200) momentum = 18;
-    else if (stars > 50) momentum = 15;
+    // 3. Community Momentum (0-25). Replaced 4 fixed star thresholds
+    // (only 5 possible values total) with a continuous log10 curve, plus a
+    // real recency term from the repo's actual last-pushed date: two repos
+    // with the same star count but very different maintenance activity
+    // now score differently instead of tying.
+    const starMomentum = Math.min(20, Math.log10(Math.max(1, stars) + 1) * 4);
+    let recencyBonus = 2.5; // neutral when we don't have real pushedAt data
+    if (pushedAt) {
+      const daysSincePush = (Date.now() - new Date(pushedAt).getTime()) / 86400000;
+      if (daysSincePush <= 30) recencyBonus = 5;
+      else if (daysSincePush <= 180) recencyBonus = 4;
+      else if (daysSincePush <= 730) recencyBonus = 2;
+      else recencyBonus = 0; // real signal: not touched in 2+ years
+    }
+    const momentum = Math.min(25, Math.round((starMomentum + recencyBonus) * 10) / 10);
 
     // 4. Local Self-Hostability & Privacy (0-20)
     let selfHost = 15;
     if (!combinedText.includes("cloud only") && !combinedText.includes("saas subscription")) selfHost = 20;
 
-    const total = arch + clean + momentum + selfHost;
+    // Rounded to 1 decimal, not an integer — the old all-integer-bucket
+    // formula produced only a few dozen possible totals, so unrelated repos
+    // (react and cypress, say) routinely landed on the exact same score.
+    // A continuous formula honestly has many possible values; forcing it
+    // back to whole numbers would just reintroduce artificial ties.
+    const total = Math.round((arch + clean + momentum + selfHost) * 10) / 10;
 
     let recommendation: ForkRecommendation = "MONITOR 👁️";
     if (total >= 88) recommendation = "MUST FORK & ENHANCE 🚀";

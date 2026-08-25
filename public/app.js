@@ -156,10 +156,14 @@ async function fetchCatalog() {
 
   try {
     const res = await fetch(url.toString());
-    const repos = await res.json();
+    const data = await res.json();
+    const repos = data.rows;
     currentCatalog = repos;
 
-    document.getElementById("chip-repo-count").textContent = `📚 ${repos.length} Repos Indexed`;
+    // Real total matching the current filters, not the page size — a
+    // "60 Repos Indexed" chip when the real index has 35,000+ was
+    // misleading (it was literally just the page limit).
+    document.getElementById("chip-repo-count").textContent = `📚 ${data.total.toLocaleString()} Repos Indexed`;
 
     container.innerHTML = "";
     if (repos.length === 0) {
@@ -486,10 +490,14 @@ function openRepoModal(r) {
       <div style="background: #05080e; padding: 8px; border-radius: 6px;">🔒 Local Privacy: ${r.scoreCard.selfHostabilityScore}/20</div>
     </div>
 
+    ${r.scoreCard.suggestedEnhancementRoadmap.length > 0 ? `
     <strong style="color: #fff;">Roadmap di Potenziamento Consigliata:</strong>
     <ul style="margin: 8px 0 14px 20px; color: var(--text-muted);">
       ${r.scoreCard.suggestedEnhancementRoadmap.map(s => `<li>${s}</li>`).join("")}
-    </ul>
+    </ul>` : ""}
+
+    <strong style="color: #fff;">📈 Andamento Reale (stelle nel tempo)</strong>
+    <div id="modal-trend-chart" style="margin: 8px 0 14px; min-height: 60px; display:flex; align-items:center; justify-content:center; color: var(--text-muted); font-size: 11px;">Caricamento cronologia reale...</div>
 
     <div style="display: flex; gap: 8px;">
       <button class="btn btn-primary" style="flex: 1;" onclick="navigator.clipboard.writeText('gh repo fork ${r.fullName} --clone'); alert('📋 Command copied: gh repo fork ${r.fullName} --clone')">🍴 Copy Fork Command (gh repo fork)</button>
@@ -498,6 +506,41 @@ function openRepoModal(r) {
   `;
 
   modal.style.display = "flex";
+  loadRepoTrend(r.fullName);
+}
+
+async function loadRepoTrend(fullName) {
+  const container = document.getElementById("modal-trend-chart");
+  if (!container) return;
+  try {
+    const res = await fetch(`/api/repos/history?repo=${encodeURIComponent(fullName)}`);
+    const data = await res.json();
+    if (data.note) {
+      container.innerHTML = `<span>${escapeHtml(data.note)}</span>`;
+      return;
+    }
+    const points = data.points;
+    const stars = points.map(p => p.stars);
+    const minS = Math.min(...stars), maxS = Math.max(...stars);
+    const w = 560, h = 60, pad = 4;
+    const xStep = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+    const scaleY = (v) => maxS === minS ? h / 2 : h - pad - ((v - minS) / (maxS - minS)) * (h - pad * 2);
+    const coords = points.map((p, i) => `${pad + i * xStep},${scaleY(p.stars)}`).join(" ");
+    const first = points[0], last = points[points.length - 1];
+    container.innerHTML = `
+      <div style="width:100%;">
+        <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:60px;">
+          <polyline points="${coords}" fill="none" stroke="#4ade80" stroke-width="2" />
+        </svg>
+        <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;">
+          <span>${first.capturedAt.slice(0,10)}: ★${first.stars.toLocaleString()}</span>
+          <span>${points.length} punti reali osservati</span>
+          <span>${last.capturedAt.slice(0,10)}: ★${last.stars.toLocaleString()}</span>
+        </div>
+      </div>`;
+  } catch {
+    container.innerHTML = `<span>Impossibile caricare la cronologia.</span>`;
+  }
 }
 
 // 7. Daily Daemon & Version Radar

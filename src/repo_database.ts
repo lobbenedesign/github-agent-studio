@@ -151,6 +151,22 @@ export class RepoDatabase {
       );
     `);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_partitions_pending ON crawl_partitions(exhausted, needs_split);`);
+
+    // Real time-series: one row per (repo, time it was observed), appended
+    // — never overwritten — every time the crawler upserts a repo. This is
+    // what makes an actual trend view possible instead of the single
+    // always-overwritten snapshot in `repos`.
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS repo_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        stars INTEGER NOT NULL,
+        forks INTEGER NOT NULL,
+        open_issues INTEGER NOT NULL,
+        captured_at TEXT NOT NULL
+      );
+    `);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_repo ON repo_snapshots(full_name, captured_at);`);
   }
 
   public upsertRepo(r: Omit<StoredRepo, "firstIndexedAt" | "lastCrawledAt">): "inserted" | "updated" {
@@ -194,14 +210,60 @@ export class RepoDatabase {
         $selfHostabilityScore: r.selfHostabilityScore
       }
     );
+    this.recordSnapshotIfChanged(r.fullName, r.stars, r.forks, r.openIssues, now);
+
     return existing ? "updated" : "inserted";
   }
 
+  /**
+   * Appends a real trend data point — but only if it actually differs from
+   * the most recent one for this repo (or none exists yet). Without this
+   * dedup, every crawl pass over an unchanged repo would insert an
+   * identical row forever, turning "real history" into noise that doesn't
+   * actually show any trend.
+   */
+  private recordSnapshotIfChanged(fullName: string, stars: number, forks: number, openIssues: number, now: string): void {
+    const last = this.db
+      .query("SELECT stars, forks, open_issues as openIssues FROM repo_snapshots WHERE full_name = ? ORDER BY captured_at DESC LIMIT 1")
+      .get(fullName) as { stars: number; forks: number; openIssues: number } | null;
+    if (last && last.stars === stars && last.forks === forks && last.openIssues === openIssues) return;
+    this.db.run(
+      `INSERT INTO repo_snapshots (full_name, stars, forks, open_issues, captured_at) VALUES ($fullName, $stars, $forks, $openIssues, $capturedAt)`,
+      { $fullName: fullName, $stars: stars, $forks: forks, $openIssues: openIssues, $capturedAt: now }
+    );
+  }
+
+  public getHistory(fullName: string, limit: number = 500): { stars: number; forks: number; openIssues: number; capturedAt: string }[] {
+    const rows = this.db
+      .query("SELECT stars, forks, open_issues as openIssues, captured_at as capturedAt FROM repo_snapshots WHERE full_name = ? ORDER BY captured_at ASC LIMIT ?")
+      .all(fullName, limit) as any[];
+    return rows;
+  }
+
+  /**
+   * Resets every exhausted partition back to page 1 so the crawler makes
+   * another full pass instead of idling forever once the initial sweep
+   * finishes. Each re-visit is what actually produces new points in
+   * repo_snapshots over time — without this, "trending" would freeze at
+   * whatever was captured during the first pass.
+   */
+  public resetExhaustedPartitionsForResweep(): number {
+    const result = this.db.run("UPDATE crawl_partitions SET exhausted = 0, next_page = 1 WHERE exhausted = 1 AND needs_split = 0");
+    return result.changes;
+  }
+
   /** Real rows already in the DB from before scoring existed (total_score IS NULL). */
-  public getUnscoredRepos(limit: number = 5000): { fullName: string; name: string; stars: number; forks: number; language: string | null; description: string | null }[] {
+  public getUnscoredRepos(limit: number = 5000): { fullName: string; name: string; stars: number; forks: number; language: string | null; description: string | null; openIssues: number; pushedAt: string | null }[] {
     return this.db
-      .query("SELECT full_name as fullName, name, stars, forks, language, description FROM repos WHERE total_score IS NULL LIMIT ?")
+      .query("SELECT full_name as fullName, name, stars, forks, language, description, open_issues as openIssues, pushed_at as pushedAt FROM repos WHERE total_score IS NULL LIMIT ?")
       .all(limit) as any[];
+  }
+
+  /** Re-scores every already-indexed repo — used after a scoring-formula change so existing rows reflect it instead of only new crawls. */
+  public getAllReposForRescore(limit: number, offset: number): { fullName: string; name: string; stars: number; forks: number; language: string | null; description: string | null; openIssues: number; pushedAt: string | null }[] {
+    return this.db
+      .query("SELECT full_name as fullName, name, stars, forks, language, description, open_issues as openIssues, pushed_at as pushedAt FROM repos ORDER BY full_name LIMIT ? OFFSET ?")
+      .all(limit, offset) as any[];
   }
 
   public backfillScore(fullName: string, category: string | null, score: { totalScore: number; recommendation: string; architectureScore: number; codeCleanlinessScore: number; communityMomentumScore: number; selfHostabilityScore: number }): void {
