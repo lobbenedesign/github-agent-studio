@@ -26,7 +26,16 @@ export interface RepoScoreCard {
 export class CodeEvaluator {
   private llmEvaluator = new LLMEvaluator();
 
-  public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = ""): RepoScoreCard {
+  /**
+   * @param isOwnSuite Only set true for this suite's own ~20 hand-curated
+   *   sibling projects. The roadmap/verdict text below ("integrate into
+   *   Nexus Local Engine", "add start-macos.command") is written for THOSE
+   *   specifically — applying it to an arbitrary external repo (react/react,
+   *   or any of the thousands the deep crawler indexes) would be nonsensical
+   *   advice with no bearing on the actual project. Deep-crawled repos get a
+   *   generic, real, deterministic score/recommendation with no suite-specific roadmap.
+   */
+  public evaluateRepo(name: string, stars: number, forks: number, language: string, description: string, readmeText: string = "", isOwnSuite: boolean = false): RepoScoreCard {
     const combinedText = `${name} ${description} ${readmeText}`.toLowerCase();
 
     // 1. Architecture & Innovation (0-30)
@@ -68,19 +77,27 @@ export class CodeEvaluator {
     
     let strategicVerdict = `Da monitorare: presenta buone idee ma necessita di verifiche sulla stabilità.`;
     if (total >= 88) {
-      strategicVerdict = `🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.`;
+      strategicVerdict = isOwnSuite
+        ? `🎯 FORK PRIORITARIO: Codice di qualità eccellente con algoritmi unici. Altissimo valore strategico per integrazione nella nostra suite.`
+        : `🎯 Alta priorità: alta trazione reale (${stars} stelle, ${forks} fork) e segnali di qualità del codice sopra la media.`;
     } else if (total >= 75) {
       strategicVerdict = `⚡ ALTO POTENZIALE: Ottimo punto di riferimento per nuove funzionalità o fork mirati.`;
     } else if (total < 60) {
       strategicVerdict = `🚫 DA IGNORARE / CESTINARE: Bassa trazione, codice obsoleto o architettura chiusa.`;
     }
 
-    const roadmap: string[] = [
-      `Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.`,
-      `Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).`,
-      `Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).`,
-      `Script di avvio istantaneo con 1 clic 'start-macos.command'.`
-    ];
+    // The concrete roadmap below only makes sense for this suite's own
+    // sibling projects. For arbitrary crawled repos we don't know enough
+    // (no read of the actual code yet) to suggest specific next steps —
+    // an empty roadmap is the honest answer, not a copy-pasted generic one.
+    const roadmap: string[] = isOwnSuite
+      ? [
+          `Modernizzazione interfaccia grafica con Web Studio Dark-Mode Cyberpunk.`,
+          `Integrazione accelerazione hardware locale (Apple Silicon MPS / NVIDIA CUDA).`,
+          `Unificazione con l'ecosistema suite (Nexus Local Engine, HyperRAG Studio, OmniClaw).`,
+          `Script di avvio istantaneo con 1 clic 'start-macos.command'.`
+        ]
+      : [];
 
     return {
       totalScore: total,

@@ -23,6 +23,8 @@
  */
 
 import { RepoDatabase } from "./repo_database";
+import { CodeEvaluator } from "./code_evaluator";
+import { detectCategory } from "./category_detector";
 
 const SEARCH_INTERVAL_MS = 2500; // ~24 req/min, under the real 30/min cap
 const MAX_RESULTS_PER_QUERY = 1000; // GitHub Search API's real hard cap regardless of pagination
@@ -54,6 +56,7 @@ export interface CrawlTickResult {
 
 export class DeepCrawler {
   private db: RepoDatabase;
+  private evaluator = new CodeEvaluator();
   private timer: ReturnType<typeof setInterval> | null = null;
   private running = false;
   private lastTick: CrawlTickResult | null = null;
@@ -155,6 +158,19 @@ export class DeepCrawler {
 
     let ingested = 0;
     for (const item of items) {
+      // Real, deterministic heuristic score (stars/forks/language/description
+      // text) — cheap and synchronous, no extra network call, so it costs
+      // nothing against the Search API rate budget. isOwnSuite=false: this
+      // is an arbitrary external repo, never gets the suite-specific roadmap.
+      const score = this.evaluator.evaluateRepo(
+        item.name,
+        item.stargazers_count ?? 0,
+        item.forks_count ?? 0,
+        item.language || "",
+        item.description || "",
+        "",
+        false
+      );
       const result = this.db.upsertRepo({
         fullName: item.full_name,
         name: item.name,
@@ -170,7 +186,14 @@ export class DeepCrawler {
         createdAt: item.created_at,
         pushedAt: item.pushed_at,
         defaultBranch: item.default_branch,
-        archived: !!item.archived
+        archived: !!item.archived,
+        category: detectCategory(item.description || "", item.topics || []),
+        totalScore: score.totalScore,
+        recommendation: score.recommendation,
+        architectureScore: score.architectureScore,
+        codeCleanlinessScore: score.codeCleanlinessScore,
+        communityMomentumScore: score.communityMomentumScore,
+        selfHostabilityScore: score.selfHostabilityScore
       });
       if (result === "inserted") ingested++;
     }

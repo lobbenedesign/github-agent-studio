@@ -6,6 +6,7 @@
 import { CodeEvaluator, RepoScoreCard } from "./code_evaluator";
 import { GitHubApiClient, GitHubLiveMetadata } from "./github_api_client";
 import { VersionTracker, VersionDelta } from "./version_tracker";
+import { detectCategory } from "./category_detector";
 import { join } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 
@@ -20,7 +21,7 @@ export interface GitHubRepoItem {
   openIssues: number;
   language: string;
   license: string;
-  category: "LLM & Inference" | "Agents & Automation" | "Vision & Multimodal" | "Voice & Audio" | "Reasoning & MCTS" | "Fine-Tuning & RL" | "Code & SWE" | "RAG & Knowledge";
+  category: "LLM & Inference" | "Agents & Automation" | "Vision & Multimodal" | "Voice & Audio" | "Reasoning & MCTS" | "Fine-Tuning & RL" | "Code & SWE" | "RAG & Knowledge" | null;
   description: string;
   scoreCard: RepoScoreCard;
   currentVersion: string;
@@ -347,7 +348,11 @@ export class RepoIndexer {
     ];
 
     this.catalog = rawData.map(r => {
-      const score = this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description);
+      // Only lobbenedesign/* entries in this seed list get the suite-specific
+      // roadmap ("integrate into Nexus Local Engine" etc.) — it makes no
+      // sense attached to bun, DeepSeek-R1, or any other external repo also
+      // hand-seeded here for A-Z browsing.
+      const score = this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description, "", r.fullName.startsWith("lobbenedesign/"));
       // seed baseline: no real "yesterday" snapshot exists yet for a freshly-booted
       // catalog, so previousStars starts equal to stars (delta 0) until the cron
       // scheduler's real GitHub polling establishes an actual history.
@@ -414,16 +419,7 @@ export class RepoIndexer {
   public async scanAndAddLiveRepo(urlOrName: string): Promise<GitHubRepoItem> {
     const meta = await this.apiClient.fetchLiveRepo(urlOrName);
 
-    // Auto-detect category
-    let cat: GitHubRepoItem["category"] = "LLM & Inference";
-    const desc = (meta.description + " " + meta.topics.join(" ")).toLowerCase();
-    if (desc.includes("agent") || desc.includes("browser")) cat = "Agents & Automation";
-    else if (desc.includes("voice") || desc.includes("audio") || desc.includes("speech")) cat = "Voice & Audio";
-    else if (desc.includes("vision") || desc.includes("vlm") || desc.includes("gui")) cat = "Vision & Multimodal";
-    else if (desc.includes("reasoning") || desc.includes("mcts") || desc.includes("math")) cat = "Reasoning & MCTS";
-    else if (desc.includes("fine-tuning") || desc.includes("rl") || desc.includes("grpo")) cat = "Fine-Tuning & RL";
-    else if (desc.includes("code") || desc.includes("swe") || desc.includes("ui") || desc.includes("canvas")) cat = "Code & SWE";
-    else if (desc.includes("rag") || desc.includes("graph") || desc.includes("retrieval")) cat = "RAG & Knowledge";
+    const cat = detectCategory(meta.description, meta.topics);
 
     const scoreCard = this.evaluator.evaluateRepo(meta.name, meta.stars, meta.forks, meta.language, meta.description, meta.readmeExcerpt);
 

@@ -176,9 +176,9 @@ async function fetchCatalog() {
           <div>
             <div class="repo-title">
               <a href="${r.url}" target="_blank" onclick="event.stopPropagation()">${r.name}</a>
-              <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); margin-left: 6px;">${r.currentVersion || 'v1.0'}</span>
+              <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); margin-left: 6px;">${r.currentVersion || '—'}</span>
             </div>
-            <div class="repo-author">${r.fullName} • <span style="color: #38bdf8;">${r.category}</span></div>
+            <div class="repo-author">${r.fullName} • <span style="color: #38bdf8;">${r.category || "General"}</span></div>
           </div>
           <span class="repo-badge-score">${r.scoreCard.totalScore}/100</span>
         </div>
@@ -467,7 +467,7 @@ function openRepoModal(r) {
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
       <div>
         <a href="${r.url}" target="_blank" style="color: #38bdf8; font-weight: 700; font-size: 14px;">🔗 ${r.url}</a><br>
-        <span style="font-size: 11px; color: var(--text-muted);">Author: <strong>${r.owner}</strong> • Current Version: <strong>${r.currentVersion || 'v1.0'}</strong> • License: <strong>${r.license}</strong></span>
+        <span style="font-size: 11px; color: var(--text-muted);">Author: <strong>${r.owner}</strong> • Current Version: <strong>${r.currentVersion || '—'}</strong> • License: <strong>${r.license}</strong></span>
       </div>
       <span class="repo-badge-score" style="font-size: 14px; padding: 4px 12px;">${r.scoreCard.totalScore} / 100</span>
     </div>

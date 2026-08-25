@@ -16,6 +16,8 @@ import { SimilarRepoFinder } from "./src/similar_repo_finder";
 import { RepoDatabase } from "./src/repo_database";
 import { DeepCrawler } from "./src/deep_crawler";
 import { GitHubApiClient } from "./src/github_api_client";
+import { CodeEvaluator } from "./src/code_evaluator";
+import { detectCategory } from "./src/category_detector";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -32,11 +34,29 @@ const depAuditor = new DependencyAuditor();
 const similarFinder = new SimilarRepoFinder();
 const repoDb = new RepoDatabase();
 const deepCrawler = new DeepCrawler(repoDb);
+
+// One-time real migration: rows crawled before scoring/category support
+// existed have NULL score columns forever otherwise. Cheap and synchronous
+// (no network), so it runs inline at boot rather than needing a separate command.
+(() => {
+  const evaluator = new CodeEvaluator();
+  let totalBackfilled = 0;
+  while (true) {
+    const unscored = repoDb.getUnscoredRepos(5000);
+    if (unscored.length === 0) break;
+    for (const r of unscored) {
+      const score = evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language || "", r.description || "", "", false);
+      repoDb.backfillScore(r.fullName, detectCategory(r.description || "", []), score);
+    }
+    totalBackfilled += unscored.length;
+  }
+  if (totalBackfilled > 0) console.log(`📐 Backfilled real scores for ${totalBackfilled} repos indexed before scoring existed.`);
+})();
 const apiClientForVersions = new GitHubApiClient();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
-console.log(`🔤 A-to-Z Universal Repository Catalog: Active (${indexer.getCatalog().length} Repos)`);
+console.log(`🔤 A-to-Z Universal Repository Catalog: Active (${indexer.getCatalog().length} curated + ${repoDb.count()} deep-crawled Repos)`);
 console.log(`🌟 Active Fork Hunter Engine: Ready`);
 console.log(`🛡️ OpenSSF Security & Supply-Chain Shield: Online`);
 console.log(`🗄️ MergeStat-Style SQL Query Engine: Active`);
@@ -94,9 +114,79 @@ const server = Bun.serve({
       const minScore = url.searchParams.has("minScore") ? Number(url.searchParams.get("minScore")) : undefined;
       const q = url.searchParams.get("q") || undefined;
       const sortBy = url.searchParams.get("sortBy") || "score";
+      const limit = url.searchParams.has("limit") ? Number(url.searchParams.get("limit")) : 60;
+      const offset = url.searchParams.has("offset") ? Number(url.searchParams.get("offset")) : 0;
 
-      const repos = indexer.getCatalog(letter, category, minScore, q, sortBy);
-      return new Response(JSON.stringify(repos), { headers });
+      // Unify the ~20 hand-curated suite entries (indexer, with their real
+      // roadmap/verdict) with the real, growing deep-crawler index
+      // (repoDb) — previously these were two disconnected systems: the
+      // crawler could index thousands of real repos but the main catalog
+      // tab a user actually looks at never showed them or scored them.
+      //
+      // Both lists are pulled, converted to one common shape, and sorted
+      // TOGETHER — an earlier version of this fetched each list pre-sorted
+      // and concatenated curated-first, which meant the ~20 curated repos
+      // always occupied the whole first page regardless of score, silently
+      // hiding every one of the real 35,000+ crawled repos (found by
+      // actually looking at the rendered page in a browser, not just
+      // reading the code — the bug wasn't visible from the code alone).
+      const curated = indexer.getCatalog(letter, category, minScore, q, sortBy);
+      const dbSortBy = sortBy === "delta" ? "indexed" : (sortBy as any); // repoDb has no 24h-delta concept yet
+      const dbResult = repoDb.browse({
+        letter,
+        category,
+        minScore,
+        query: q,
+        sortBy: dbSortBy === "score" || dbSortBy === "stars" || dbSortBy === "forks" || dbSortBy === "name" || dbSortBy === "indexed" || dbSortBy === "pushed" ? dbSortBy : "score",
+        sortDir: "desc",
+        limit: limit + curated.length,
+        offset
+      });
+
+      const curatedNames = new Set(curated.map((c) => c.fullName.toLowerCase()));
+      const fromDb = dbResult.rows
+        .filter((r) => !curatedNames.has(r.fullName.toLowerCase()))
+        .map((r) => ({
+          id: r.fullName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          name: r.name,
+          fullName: r.fullName,
+          url: r.url,
+          owner: r.owner,
+          stars: r.stars,
+          forks: r.forks,
+          openIssues: r.openIssues,
+          language: r.language || "unknown",
+          license: r.license || "none",
+          category: r.category,
+          description: r.description,
+          scoreCard: {
+            totalScore: r.totalScore ?? 0,
+            recommendation: r.recommendation ?? "MONITOR 👁️",
+            architectureScore: r.architectureScore ?? 0,
+            codeCleanlinessScore: r.codeCleanlinessScore ?? 0,
+            communityMomentumScore: r.communityMomentumScore ?? 0,
+            selfHostabilityScore: r.selfHostabilityScore ?? 0,
+            italianSummary: { whatItDoes: r.description || "", howItWorks: "", strategicVerdict: r.recommendation ?? "" },
+            strategicRationale: r.recommendation ?? "",
+            suggestedEnhancementRoadmap: []
+          },
+          currentVersion: null,
+          starDelta24h: 0,
+          hasRecentUpdate: false,
+          updatedAt: (r.pushedAt || r.firstIndexedAt).slice(0, 10)
+        }));
+
+      const merged = [...curated, ...fromDb];
+      const cmp: Record<string, (a: any, b: any) => number> = {
+        score: (a, b) => (b.scoreCard?.totalScore ?? 0) - (a.scoreCard?.totalScore ?? 0),
+        stars: (a, b) => b.stars - a.stars,
+        forks: (a, b) => b.forks - a.forks,
+        name: (a, b) => a.name.localeCompare(b.name),
+        delta: (a, b) => (b.starDelta24h ?? 0) - (a.starDelta24h ?? 0)
+      };
+      merged.sort(cmp[sortBy] || cmp.score);
+
+      return new Response(JSON.stringify(merged.slice(0, limit)), { headers });
     }
 
     // 3. Scan & Evaluate Live GitHub URL

@@ -36,14 +36,23 @@ export interface StoredRepo {
   archived: boolean;
   firstIndexedAt: string;
   lastCrawledAt: string;
+  category: string | null;
+  totalScore: number | null;
+  recommendation: string | null;
+  architectureScore: number | null;
+  codeCleanlinessScore: number | null;
+  communityMomentumScore: number | null;
+  selfHostabilityScore: number | null;
 }
 
 export interface RepoBrowseFilters {
   letter?: string; // 'A'-'Z' or '#' for non-alphabetic
   language?: string;
+  category?: string;
   minStars?: number;
+  minScore?: number;
   query?: string; // substring match on name/description
-  sortBy?: "stars" | "forks" | "name" | "pushed" | "indexed";
+  sortBy?: "stars" | "forks" | "name" | "pushed" | "indexed" | "score";
   sortDir?: "asc" | "desc";
   limit?: number;
   offset?: number;
@@ -58,6 +67,31 @@ export class RepoDatabase {
     this.db = new Database(dbPath || join(dir, "repos.db"));
     this.db.exec("PRAGMA journal_mode = WAL;"); // real concurrent-safe writes while the crawler and API reads overlap
     this.initSchema();
+  }
+
+  /**
+   * `CREATE TABLE IF NOT EXISTS` doesn't add columns to a table that
+   * already exists from an earlier version of this schema — a repos.db
+   * created before scoring/category support would silently keep working
+   * but every score column would be NULL forever. Real migration instead
+   * of just documenting "delete the db and re-crawl."
+   */
+  private migrateAddColumnsIfMissing(): void {
+    const existing = new Set((this.db.query("PRAGMA table_info(repos)").all() as any[]).map((c) => c.name));
+    const wanted: [string, string][] = [
+      ["category", "TEXT"],
+      ["total_score", "REAL"],
+      ["recommendation", "TEXT"],
+      ["architecture_score", "REAL"],
+      ["code_cleanliness_score", "REAL"],
+      ["community_momentum_score", "REAL"],
+      ["self_hostability_score", "REAL"]
+    ];
+    for (const [col, type] of wanted) {
+      if (!existing.has(col)) {
+        this.db.run(`ALTER TABLE repos ADD COLUMN ${col} ${type};`);
+      }
+    }
   }
 
   private initSchema(): void {
@@ -79,13 +113,25 @@ export class RepoDatabase {
         default_branch TEXT,
         archived INTEGER DEFAULT 0,
         first_indexed_at TEXT NOT NULL,
-        last_crawled_at TEXT NOT NULL
+        last_crawled_at TEXT NOT NULL,
+        category TEXT,
+        total_score REAL,
+        recommendation TEXT,
+        architecture_score REAL,
+        code_cleanliness_score REAL,
+        community_momentum_score REAL,
+        self_hostability_score REAL
       );
     `);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_repos_name ON repos(name COLLATE NOCASE);`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_repos_stars ON repos(stars DESC);`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_repos_language ON repos(language);`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_repos_pushed ON repos(pushed_at DESC);`);
+    // Must run before the index below: an existing repos.db from before
+    // scoring existed has no total_score column yet, so an index on it
+    // would fail (this is exactly what happened on the first real run).
+    this.migrateAddColumnsIfMissing();
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_repos_score ON repos(total_score DESC);`);
 
     // Real, persistent crawl frontier — see deep_crawler.ts. Living here
     // (not a separate file) so the DB is the single source of truth for
@@ -111,13 +157,16 @@ export class RepoDatabase {
     const now = new Date().toISOString();
     const existing = this.db.query("SELECT full_name FROM repos WHERE full_name = ?").get(r.fullName);
     this.db.run(
-      `INSERT INTO repos (full_name, name, owner, url, description, language, license, stars, forks, open_issues, topics, created_at, pushed_at, default_branch, archived, first_indexed_at, last_crawled_at)
-       VALUES ($fullName, $name, $owner, $url, $description, $language, $license, $stars, $forks, $openIssues, $topics, $createdAt, $pushedAt, $defaultBranch, $archived, $firstIndexedAt, $lastCrawledAt)
+      `INSERT INTO repos (full_name, name, owner, url, description, language, license, stars, forks, open_issues, topics, created_at, pushed_at, default_branch, archived, first_indexed_at, last_crawled_at, category, total_score, recommendation, architecture_score, code_cleanliness_score, community_momentum_score, self_hostability_score)
+       VALUES ($fullName, $name, $owner, $url, $description, $language, $license, $stars, $forks, $openIssues, $topics, $createdAt, $pushedAt, $defaultBranch, $archived, $firstIndexedAt, $lastCrawledAt, $category, $totalScore, $recommendation, $architectureScore, $codeCleanlinessScore, $communityMomentumScore, $selfHostabilityScore)
        ON CONFLICT(full_name) DO UPDATE SET
          description=excluded.description, language=excluded.language, license=excluded.license,
          stars=excluded.stars, forks=excluded.forks, open_issues=excluded.open_issues,
          topics=excluded.topics, pushed_at=excluded.pushed_at, archived=excluded.archived,
-         last_crawled_at=excluded.last_crawled_at`,
+         last_crawled_at=excluded.last_crawled_at, category=excluded.category,
+         total_score=excluded.total_score, recommendation=excluded.recommendation,
+         architecture_score=excluded.architecture_score, code_cleanliness_score=excluded.code_cleanliness_score,
+         community_momentum_score=excluded.community_momentum_score, self_hostability_score=excluded.self_hostability_score`,
       {
         $fullName: r.fullName,
         $name: r.name,
@@ -135,10 +184,40 @@ export class RepoDatabase {
         $defaultBranch: r.defaultBranch,
         $archived: r.archived ? 1 : 0,
         $firstIndexedAt: now,
-        $lastCrawledAt: now
+        $lastCrawledAt: now,
+        $category: r.category,
+        $totalScore: r.totalScore,
+        $recommendation: r.recommendation,
+        $architectureScore: r.architectureScore,
+        $codeCleanlinessScore: r.codeCleanlinessScore,
+        $communityMomentumScore: r.communityMomentumScore,
+        $selfHostabilityScore: r.selfHostabilityScore
       }
     );
     return existing ? "updated" : "inserted";
+  }
+
+  /** Real rows already in the DB from before scoring existed (total_score IS NULL). */
+  public getUnscoredRepos(limit: number = 5000): { fullName: string; name: string; stars: number; forks: number; language: string | null; description: string | null }[] {
+    return this.db
+      .query("SELECT full_name as fullName, name, stars, forks, language, description FROM repos WHERE total_score IS NULL LIMIT ?")
+      .all(limit) as any[];
+  }
+
+  public backfillScore(fullName: string, category: string | null, score: { totalScore: number; recommendation: string; architectureScore: number; codeCleanlinessScore: number; communityMomentumScore: number; selfHostabilityScore: number }): void {
+    this.db.run(
+      `UPDATE repos SET category=$category, total_score=$totalScore, recommendation=$recommendation, architecture_score=$architectureScore, code_cleanliness_score=$codeCleanlinessScore, community_momentum_score=$communityMomentumScore, self_hostability_score=$selfHostabilityScore WHERE full_name=$fullName`,
+      {
+        $fullName: fullName,
+        $category: category,
+        $totalScore: score.totalScore,
+        $recommendation: score.recommendation,
+        $architectureScore: score.architectureScore,
+        $codeCleanlinessScore: score.codeCleanlinessScore,
+        $communityMomentumScore: score.communityMomentumScore,
+        $selfHostabilityScore: score.selfHostabilityScore
+      }
+    );
   }
 
   public count(): number {
@@ -170,9 +249,17 @@ export class RepoDatabase {
       clauses.push("(name LIKE $q COLLATE NOCASE OR description LIKE $q COLLATE NOCASE)");
       params.$q = `%${filters.query}%`;
     }
+    if (typeof filters.minScore === "number") {
+      clauses.push("total_score >= $minScore");
+      params.$minScore = filters.minScore;
+    }
+    if (filters.category) {
+      clauses.push("category = $category");
+      params.$category = filters.category;
+    }
 
     const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
-    const sortCol = { stars: "stars", forks: "forks", name: "name COLLATE NOCASE", pushed: "pushed_at", indexed: "first_indexed_at" }[filters.sortBy || "stars"] || "stars";
+    const sortCol = { stars: "stars", forks: "forks", name: "name COLLATE NOCASE", pushed: "pushed_at", indexed: "first_indexed_at", score: "total_score" }[filters.sortBy || "stars"] || "stars";
     const dir = filters.sortDir === "asc" ? "ASC" : "DESC";
     const limit = Math.min(200, Math.max(1, filters.limit ?? 50));
     const offset = Math.max(0, filters.offset ?? 0);
@@ -214,7 +301,14 @@ export class RepoDatabase {
       defaultBranch: row.default_branch,
       archived: !!row.archived,
       firstIndexedAt: row.first_indexed_at,
-      lastCrawledAt: row.last_crawled_at
+      lastCrawledAt: row.last_crawled_at,
+      category: row.category,
+      totalScore: row.total_score,
+      recommendation: row.recommendation,
+      architectureScore: row.architecture_score,
+      codeCleanlinessScore: row.code_cleanliness_score,
+      communityMomentumScore: row.community_momentum_score,
+      selfHostabilityScore: row.self_hostability_score
     };
   }
 
