@@ -12,6 +12,7 @@
  */
 
 import { GitHubApiClient, parseOwnerRepo } from "./github_api_client";
+import { scanForVulnerabilities, VulnMatch } from "./vulnerability_scanner";
 
 export interface DependencyAuditEntry {
   name: string;
@@ -21,6 +22,9 @@ export interface DependencyAuditEntry {
   latestVersion: string | null;
   status: "up-to-date" | "patch-behind" | "minor-behind" | "major-behind" | "unknown";
   registryUrl: string;
+  /** Real known vulnerabilities affecting `currentVersion`, from OSV.dev. `null` means
+   *  "not scanned" (e.g. no resolvable current version) — never means "confirmed safe". */
+  vulnerabilities: VulnMatch[] | null;
 }
 
 export interface DependencyAuditReport {
@@ -30,6 +34,8 @@ export interface DependencyAuditReport {
   totalDependencies: number;
   outdatedCount: number;
   majorBehindCount: number;
+  vulnerableCount: number;
+  totalVulnerabilities: number;
   dependencies: DependencyAuditEntry[];
   checkedAt: string;
 }
@@ -95,7 +101,7 @@ export class DependencyAuditor {
       };
       const entries = Object.entries(deps).slice(0, 60); // cap fanout against the public registry
       const audited = await mapWithConcurrency(entries, 8, ([name, range]) => this.auditNpmPackage(name, range));
-      return this.buildReport(fullName, "package.json", pkgUrl, audited);
+      return await this.buildReport(fullName, "package.json", pkgUrl, audited);
     }
 
     const reqUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/requirements.txt`;
@@ -113,7 +119,7 @@ export class DependencyAuditor {
       }
       const capped = entries.slice(0, 60);
       const audited = await mapWithConcurrency(capped, 8, ([name, range]) => this.auditPypiPackage(name, range));
-      return this.buildReport(fullName, "requirements.txt", reqUrl, audited);
+      return await this.buildReport(fullName, "requirements.txt", reqUrl, audited);
     }
 
     return {
@@ -123,6 +129,8 @@ export class DependencyAuditor {
       totalDependencies: 0,
       outdatedCount: 0,
       majorBehindCount: 0,
+      vulnerableCount: 0,
+      totalVulnerabilities: 0,
       dependencies: [],
       checkedAt: new Date().toISOString()
     };
@@ -134,14 +142,14 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl };
+        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
       }
       const data = await res.json();
       const latestVersion: string = data.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl };
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null };
     } catch {
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl };
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
     }
   }
 
@@ -151,23 +159,43 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl };
+        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
       }
       const data = await res.json();
       const latestVersion: string = data.info?.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl };
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null };
     } catch {
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl };
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
     }
   }
 
-  private buildReport(
+  private async buildReport(
     repoFullName: string,
     manifestFound: "package.json" | "requirements.txt",
     manifestUrl: string,
     dependencies: DependencyAuditEntry[]
-  ): DependencyAuditReport {
+  ): Promise<DependencyAuditReport> {
+    // Real known-vulnerability scan against OSV.dev (osv.dev) — the same open
+    // vulnerability database GitHub Dependabot alerts are built on. Only packages
+    // with a resolvable exact currentVersion can be matched; everything else stays
+    // `vulnerabilities: null` (not scanned), never a fabricated "clean" result.
+    const osvEcosystem: Record<DependencyAuditEntry["ecosystem"], "npm" | "PyPI"> = { npm: "npm", pypi: "PyPI" };
+    const scannable = dependencies.filter((d) => d.currentVersion);
+    const vulnMap = await scanForVulnerabilities(
+      scannable.map((d) => ({
+        key: `${d.ecosystem}:${d.name}:${d.currentVersion}`,
+        name: d.name,
+        ecosystem: osvEcosystem[d.ecosystem],
+        version: d.currentVersion as string
+      }))
+    );
+    for (const d of dependencies) {
+      if (!d.currentVersion) continue;
+      const key = `${d.ecosystem}:${d.name}:${d.currentVersion}`;
+      if (vulnMap.has(key)) d.vulnerabilities = vulnMap.get(key)!;
+    }
+
     const severityRank: Record<DependencyAuditEntry["status"], number> = {
       "major-behind": 0,
       "minor-behind": 1,
@@ -175,7 +203,13 @@ export class DependencyAuditor {
       unknown: 3,
       "up-to-date": 4
     };
-    const sorted = [...dependencies].sort((a, b) => severityRank[a.status] - severityRank[b.status]);
+    const sorted = [...dependencies].sort((a, b) => {
+      const aVuln = (a.vulnerabilities?.length || 0) > 0 ? 0 : 1;
+      const bVuln = (b.vulnerabilities?.length || 0) > 0 ? 0 : 1;
+      if (aVuln !== bVuln) return aVuln - bVuln;
+      return severityRank[a.status] - severityRank[b.status];
+    });
+    const vulnerableEntries = sorted.filter((d) => (d.vulnerabilities?.length || 0) > 0);
     return {
       repoFullName,
       manifestFound,
@@ -183,6 +217,8 @@ export class DependencyAuditor {
       totalDependencies: sorted.length,
       outdatedCount: sorted.filter((d) => d.status === "major-behind" || d.status === "minor-behind" || d.status === "patch-behind").length,
       majorBehindCount: sorted.filter((d) => d.status === "major-behind").length,
+      vulnerableCount: vulnerableEntries.length,
+      totalVulnerabilities: vulnerableEntries.reduce((sum, d) => sum + (d.vulnerabilities?.length || 0), 0),
       dependencies: sorted,
       checkedAt: new Date().toISOString()
     };

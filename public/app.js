@@ -239,21 +239,30 @@ function setupDependencyAuditor() {
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
             <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
               Manifest: <a href="${r.manifestUrl}" target="_blank" style="color: #38bdf8;">${r.manifestFound}</a> ·
-              ${r.totalDependencies} dipendenze · <strong style="color:#f87171;">${r.outdatedCount} non aggiornate</strong> (${r.majorBehindCount} major)
+              ${r.totalDependencies} dipendenze · <strong style="color:#f87171;">${r.outdatedCount} non aggiornate</strong> (${r.majorBehindCount} major) ·
+              <strong style="color:${r.vulnerableCount > 0 ? '#ef4444' : '#4ade80'};">${r.vulnerableCount} pacchetti con CVE/advisory note (OSV.dev)</strong>
             </div>
             <table style="width:100%; font-size: 11.5px; font-family: var(--font-mono); border-collapse: collapse;">
-              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Pacchetto</th><th>In uso</th><th>Ultima</th><th>Stato</th></tr></thead>
+              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Pacchetto</th><th>In uso</th><th>Ultima</th><th>Stato</th><th>Vulnerabilità note (OSV.dev)</th></tr></thead>
               <tbody>
                 ${r.dependencies.slice(0, 25).map(d => `
-                  <tr style="border-top: 1px solid var(--border-color);">
+                  <tr style="border-top: 1px solid var(--border-color); vertical-align: top;">
                     <td style="padding: 4px 0;">${d.name}</td>
                     <td>${d.currentVersion ?? "?"}</td>
                     <td>${d.latestVersion ?? "?"}</td>
                     <td style="color: ${d.status === 'up-to-date' ? '#4ade80' : d.status === 'major-behind' ? '#f87171' : d.status === 'unknown' ? 'var(--text-muted)' : '#facc15'};">${d.status}</td>
+                    <td style="color: ${(d.vulnerabilities && d.vulnerabilities.length > 0) ? '#ef4444' : 'var(--text-muted)'};">
+                      ${d.vulnerabilities === null
+                        ? '—'
+                        : d.vulnerabilities.length === 0
+                          ? 'nessuna nota'
+                          : d.vulnerabilities.map(v => `<a href="${v.url}" target="_blank" style="color:#ef4444;" title="${(v.summary || v.id).replace(/"/g, '&quot;')}">${v.id}</a>`).join('<br>')}
+                    </td>
                   </tr>
                 `).join("")}
               </tbody>
             </table>
+            <div style="margin-top: 10px; font-size: 10.5px; color: var(--text-muted);">Fonte vulnerabilità: <a href="https://osv.dev" target="_blank" style="color:#38bdf8;">OSV.dev</a> (stesso database usato dagli alert reali di GitHub Dependabot). "—" = versione non risolvibile, non scansionata; "nessuna nota" = nessun advisory trovato per quella versione esatta, non garanzia di sicurezza.</div>
           </div>
         `;
       }
