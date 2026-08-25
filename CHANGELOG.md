@@ -71,3 +71,17 @@ The known-vulnerability scan (part 4) closes the "known CVE on the exact pinned 
 - `bun build server.ts --target=bun --outfile=/dev/null` passes with no type/syntax errors.
 
 No score, percentage, or "risk level" label is invented — every flag is either a literal script string from the live registry or a literal download-count ratio from the live npm downloads API, both shown to the user with their real source numbers.
+
+## 2026-08-25 (part 5) — found the catalog was hiding round 1/2's own fixes
+
+Live-verified this app in a browser (per user request) instead of trusting the audit reports. `data/catalog.json` — a **committed, tracked-in-git** on-disk cache — was masking multiple already-fixed honesty issues from other sibling projects, because `RepoIndexer.loadCatalog()` prefers the persisted file over the in-code seed data and nothing ever invalidated it:
+
+- The HyperRAG-Studio card still showed the fabricated "EAGLE 3.5x" claim — fixed in `src/repo_indexer.ts` back in part 1 of this same day's work, but that fix never took effect because the stale committed `catalog.json` (written before the fix) was loaded instead.
+- The Aether-Voice card still described the old fake TypeScript "Sub-150ms Turn-Taking... Voice Tools Dispatcher" engine, even though that project was completely rewritten to a real Python LiveKit/Moshi plugin earlier today. `language` field was also still "TypeScript".
+- The GenUI-Canvas-Studio card still said "Infinite Generative UI Canvas" — a claim that project's own README explicitly found false and removed.
+- The RL-Reasoning-Gym card called itself a "GRPO Reinforcement Learning Studio" with no caveat, while that project's own README is explicit there is no gradient/optimizer/checkpoint — it's a prompt-space loop, not weight-space training.
+- Nexus-Local-Engine and OmniOS-Pilot cards similarly overstated unification/grounding claims that the sibling projects' own READMEs have since qualified or partially walked back.
+
+**Root cause fixed, not just the symptom:** `data/catalog.json` was tracked in git (`git rm --cached`, added to `.gitignore`) so a fresh checkout always regenerates from the current source seed instead of resurrecting whatever was committed at some point in the past. The seed descriptions themselves were rewritten in `src/repo_indexer.ts` to match each sibling project's actual current README, not their original launch-day marketing copy.
+
+**Verified:** killed the running server, deleted the stale `catalog.json`, restarted, confirmed via `bun build` (clean) and a live browser check (screenshot + `get_page_text`) that the regenerated catalog contains zero occurrences of any of the retired claims.

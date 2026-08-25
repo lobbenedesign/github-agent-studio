@@ -72,11 +72,11 @@ export class RepoIndexer {
         stars: 320,
         forks: 48,
         openIssues: 2,
-        language: "TypeScript",
+        language: "Python",
         license: "MIT",
         category: "Voice & Audio" as const,
-        version: "v1.0.0",
-        description: "Full-Duplex Real-Time Neural Voice Engine with Sub-150ms Turn-Taking, Natural Barge-In, and Voice Tools Dispatcher."
+        version: "v0.4.0",
+        description: "LiveKit Agents realtime plugin wrapping kyutai-labs/moshi; real full-duplex speech-to-speech over its actual wire protocol, with honestly-disclosed capability limits (no tool calling, no turn-detection events) and websocket auto-reconnect."
       },
       {
         name: "AirLLM",
@@ -160,7 +160,7 @@ export class RepoIndexer {
         license: "MIT",
         category: "Code & SWE" as const,
         version: "v1.0.0",
-        description: "Infinite Generative UI Canvas & Real-Time Streaming Component Studio with Sandboxed Interactive Iframe Previews."
+        description: "Describe a UI in natural language, get a real Ollama-generated component (HTML/CSS/JS, plus compiler-verified Vue 3 and Svelte 5 export) rendered in a sandboxed iframe. Single-pane studio, not an infinite multi-node canvas — that claim was found false and removed from its own README."
       },
       {
         name: "GitHub-Agent-Studio",
@@ -230,7 +230,7 @@ export class RepoIndexer {
         license: "MIT",
         category: "LLM & Inference" as const,
         version: "v1.2.0",
-        description: "Universal Local LLM Orchestrator unifying Apple MLX, llama.cpp, AirLLM, KTransformers, Exo, and Google TurboQuant 4-bit KV."
+        description: "Local LLM router with real Ollama-backed chat/completion and an OpenAI-compatible endpoint, real hardware telemetry, and real UDP LAN peer discovery. Apple MLX/AirLLM/vLLM/Exo support probes honestly (real HTTP attempt, honest 'not running' if absent) — not installed/verified in its own dev environment, per its README."
       },
       {
         name: "OmniOS-Pilot",
@@ -244,7 +244,7 @@ export class RepoIndexer {
         license: "MIT",
         category: "Vision & Multimodal" as const,
         version: "v1.0.0",
-        description: "Multimodal Vision-Language Desktop Automation Agent with Pixel-Coordinate Visual Grounding and Emergency Panic Switch."
+        description: "macOS automation via real AppleScript/System Events and real pixel-coordinate mouse click dispatch, with an optional Ollama vision-model screen description. Its own README documents that an earlier '97.4% visual grounding' benchmark table was fabricated and has been removed."
       },
       {
         name: "OpenHands",
@@ -300,7 +300,7 @@ export class RepoIndexer {
         license: "MIT",
         category: "Fine-Tuning & RL" as const,
         version: "v1.1.0",
-        description: "Local Group Relative Policy Optimization (GRPO) Reinforcement Learning Studio with Scaled Post-Training (GLM-5.3 Style)."
+        description: "GRPO-inspired prompt-space rollout/reward loop over real local Ollama generations. Its own README is explicit that this is NOT weight-space training — no gradient, no optimizer step, no checkpoint is ever written."
       },
       {
         name: "SWE-agent",
