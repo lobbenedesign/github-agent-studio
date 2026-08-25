@@ -192,16 +192,16 @@ function setupSecurityShield() {
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; font-size: 11px; font-family: var(--font-mono);">
-            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Vulnerabilities: <strong style="color: #4ade80;">${r.vulnerabilitiesFound} CVEs</strong></div>
-            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Dangerous Binaries: <strong style="color: #4ade80;">${r.dangerousBinariesDetected ? 'YES ⚠️' : 'CLEAN ✓'}</strong></div>
-            <div style="background: #05080e; padding: 8px; border-radius: 6px;">License: <strong style="color: #38bdf8;">COMPLIANT ✓</strong></div>
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Vulnerabilities: <strong style="color: ${r.vulnerabilitiesFound > 0 ? '#f87171' : '#4ade80'};">${r.vulnerabilitiesFound} CVEs</strong></div>
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">Dangerous Binaries: <strong style="color: ${r.dangerousBinariesDetected ? '#f87171' : '#4ade80'};">${r.dangerousBinariesDetected ? 'YES ⚠️' : 'CLEAN ✓'}</strong></div>
+            <div style="background: #05080e; padding: 8px; border-radius: 6px;">License: <strong style="color: ${r.licenseCompliance ? '#38bdf8' : '#f87171'};">${r.licenseCompliance ? 'COMPLIANT ✓' : 'NON-COMPLIANT ⚠️'}</strong></div>
           </div>
 
           <div style="font-size: 12px;">
             <strong style="color: #fff; display: block; margin-bottom: 6px;">Security Checklist Audit:</strong>
             ${r.securityChecklist.map(c => `
               <div style="display: flex; gap: 8px; margin-bottom: 4px; color: var(--text-muted);">
-                <span style="color: #4ade80;">✓</span>
+                <span style="color: ${c.passed ? '#4ade80' : '#f87171'};">${c.passed ? '✓' : '✗'}</span>
                 <div><strong style="color: #e5e7eb;">${c.check}:</strong> ${c.details}</div>
               </div>
             `).join("")}

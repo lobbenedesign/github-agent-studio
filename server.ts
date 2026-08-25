@@ -103,11 +103,16 @@ const server = Bun.serve({
       }
     }
 
-    // 4. Hunt Active Community Forks
+    // 4. Hunt Active Community Forks (real GitHub compare API; throws on
+    // rate-limit/network failure instead of returning fabricated forks)
     if (url.pathname === "/api/forks/hunt" && req.method === "GET") {
-      const repo = url.searchParams.get("repo") || "bytedance/ui-tars";
-      const forks = await forkHunter.huntActiveForks(repo);
-      return new Response(JSON.stringify(forks), { headers });
+      try {
+        const repo = url.searchParams.get("repo") || "bytedance/ui-tars";
+        const forks = await forkHunter.huntActiveForks(repo);
+        return new Response(JSON.stringify(forks), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
     }
 
     // 5. Scan Security Shield (Real OpenSSF Scorecard REST API)

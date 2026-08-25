@@ -4,7 +4,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Active Fork Hunter](https://img.shields.io/badge/Active%20Fork%20Hunter-Ahead%20Commits-green.svg)](#-features)
-[![Security Shield](https://img.shields.io/badge/OpenSSF%20Security-Grade%20A%2B-blue.svg)](#-features)
+[![Security Shield](https://img.shields.io/badge/OpenSSF%20Security-Live%20Scorecard%20API-blue.svg)](#-features)
 [![SQL Studio](https://img.shields.io/badge/MergeStat%20SQL-In--Memory-purple.svg)](#-features)
 
 [English 🇬🇧](#english) • [Italiano 🇮🇹](#italiano)
@@ -14,6 +14,10 @@
 > *La piattaforma definitiva per GitHub: scansiona i repository dalla A alla Z, scova i migliori fork della community più avanzati del progetto originale, esegue audit di sicurezza OpenSSF, supporta query SQL in-memory e aggiornamenti continui ogni 24 ore.*
 
 ![GitHub Agent Studio Dashboard](./public/screenshot.jpg)
+
+---
+
+> **2026-08-25 update:** the Fork Hunter and the 24h Crawler Daemon were previously fabricating data — the "commits ahead" figure was a formula (`12 + i*6`), the enhancement text was 3 fixed strings regardless of the actual fork, and "new repos discovered" was a hardcoded `+2` per run with no real API call in the loop. Both now call the real GitHub compare/search APIs; see `CHANGELOG.md`. One real operational limit this introduces: an unauthenticated client is capped at 60 GitHub API requests/hour — set `GITHUB_TOKEN` in the environment for the real 5000/hour authenticated limit, especially before running `/api/sync/run` repeatedly.
 
 ---
 

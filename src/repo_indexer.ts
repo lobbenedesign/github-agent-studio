@@ -202,7 +202,7 @@ export class RepoIndexer {
         license: "MIT",
         category: "RAG & Knowledge" as const,
         version: "v1.1.0",
-        description: "Next-Gen Knowledge Graph RAG (LightRAG) & Speculative Decoding Studio (EAGLE 3.5x) with Google TurboQuant 4-bit."
+        description: "Knowledge Graph RAG (LightRAG-style) & speculative decoding studio; see the repo's own README for what's implemented vs. unverified."
       },
       {
         name: "KTransformers",
@@ -348,7 +348,10 @@ export class RepoIndexer {
 
     this.catalog = rawData.map(r => {
       const score = this.evaluator.evaluateRepo(r.name, r.stars, r.forks, r.language, r.description);
-      this.versionTracker.trackDelta(r.fullName, r.version, r.version, r.stars - 12, r.stars, "2026-08-24", "Latest stable release");
+      // seed baseline: no real "yesterday" snapshot exists yet for a freshly-booted
+      // catalog, so previousStars starts equal to stars (delta 0) until the cron
+      // scheduler's real GitHub polling establishes an actual history.
+      const delta = this.versionTracker.trackDelta(r.fullName, r.version, r.version, r.stars, r.stars, "2026-08-24", "Latest stable release");
       return {
         id: r.name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
         name: r.name,
@@ -364,7 +367,7 @@ export class RepoIndexer {
         description: r.description,
         scoreCard: score,
         currentVersion: r.version,
-      starDelta24h: Math.max(2, Math.round(Number(item.stars || 100) * 0.0008) + ((item.open_issues_count || 0) % 5)),
+        starDelta24h: delta.starDelta24h,
         hasRecentUpdate: true,
         updatedAt: "2026-08-24"
       };
@@ -425,7 +428,10 @@ export class RepoIndexer {
     const scoreCard = this.evaluator.evaluateRepo(meta.name, meta.stars, meta.forks, meta.language, meta.description, meta.readmeExcerpt);
 
     const versionTag = "v1.0.0";
-    this.versionTracker.trackDelta(meta.fullName, "none", versionTag, meta.stars - 5, meta.stars, meta.updatedAt, "Live crawled repository");
+    // Same reasoning as the seed catalog: no prior snapshot exists for a repo
+    // being added for the first time, so the honest starting delta is 0, not
+    // a guessed formula. Real deltas accrue once the cron scheduler re-polls it.
+    const delta = this.versionTracker.trackDelta(meta.fullName, "none", versionTag, meta.stars, meta.stars, meta.updatedAt, "Live crawled repository");
 
     const item: GitHubRepoItem = {
       id: meta.name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
@@ -442,7 +448,7 @@ export class RepoIndexer {
       description: meta.description,
       scoreCard,
       currentVersion: versionTag,
-      starDelta24h: Math.max(1, Math.round(repoData.stargazers_count * 0.0005)),
+      starDelta24h: delta.starDelta24h,
       hasRecentUpdate: true,
       updatedAt: meta.updatedAt.slice(0, 10)
     };
@@ -453,5 +459,53 @@ export class RepoIndexer {
     this.saveCatalog();
 
     return item;
+  }
+
+  /**
+   * Re-fetches a catalog entry's live stats from the real GitHub API and
+   * records a real star delta against whatever was previously stored (used
+   * by DailyCronScheduler instead of a fake sleep-and-increment loop).
+   * Returns null if the repo isn't in the catalog or the API call fails —
+   * callers should treat null as "skip this one," not retry with fake data.
+   */
+  public async refreshRepo(fullName: string): Promise<GitHubRepoItem | null> {
+    const idx = this.catalog.findIndex(c => c.fullName.toLowerCase() === fullName.toLowerCase());
+    if (idx === -1) return null;
+
+    const existing = this.catalog[idx];
+    let meta: GitHubLiveMetadata;
+    try {
+      meta = await this.apiClient.fetchLiveRepo(fullName);
+    } catch {
+      return null;
+    }
+
+    const delta = this.versionTracker.trackDelta(
+      fullName,
+      existing.currentVersion,
+      existing.currentVersion,
+      existing.stars,
+      meta.stars,
+      meta.updatedAt,
+      meta.stars !== existing.stars ? `Star count changed ${existing.stars} -> ${meta.stars}` : "No change since last poll"
+    );
+
+    const updated: GitHubRepoItem = {
+      ...existing,
+      stars: meta.stars,
+      forks: meta.forks,
+      openIssues: meta.openIssues,
+      starDelta24h: delta.starDelta24h,
+      hasRecentUpdate: delta.starDelta24h > 0,
+      updatedAt: meta.updatedAt.slice(0, 10)
+    };
+    this.catalog[idx] = updated;
+    this.saveCatalog();
+    return updated;
+  }
+
+  /** fullNames already present, for the cron scheduler to dedupe search results against. */
+  public getKnownFullNames(): Set<string> {
+    return new Set(this.catalog.map(c => c.fullName.toLowerCase()));
   }
 }
