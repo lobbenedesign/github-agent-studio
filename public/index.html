@@ -35,6 +35,7 @@
           <button class="nav-tab" data-tab="security">🛡️ Security Shield</button>
           <button class="nav-tab" data-tab="sql">🗄️ SQL Studio</button>
           <button class="nav-tab" data-tab="radar">⏰ Version Radar</button>
+          <button class="nav-tab" data-tab="deepcrawl">🌍 Deep Crawler</button>
           <button class="nav-tab" data-tab="wiki">📖 Wiki Archive</button>
           <button class="nav-tab" data-tab="scanner">🔍 Live Scanner</button>
           <button class="nav-tab" data-tab="competitors">📊 Matrix</button>
@@ -198,6 +199,55 @@
               <span class="panel-title">🔄 Tracked Version Releases & Commit Diff History</span>
             </div>
             <div class="repos-grid" id="deltas-grid-container" style="padding: 14px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: DEEP CRAWLER — real continuously-growing public repo index -->
+      <section id="tab-deepcrawl" class="tab-pane">
+        <div class="catalog-layout">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">🌍 Deep Crawler — Real, Continuously-Growing Public Repo Index</span>
+              <div>
+                <button class="btn btn-primary" id="btn-crawl-start">▶️ Start</button>
+                <button class="btn" id="btn-crawl-stop">⏸️ Stop</button>
+                <button class="btn" id="btn-crawl-tick">⏭️ Single Tick</button>
+              </div>
+            </div>
+            <div style="padding: 10px 16px; font-size: 11.5px; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">
+              Not a mirror of "all of GitHub" (420M+ repos — not feasible). This partitions GitHub's real Search API by language × star-range and pages through each over time, respecting the real 30 req/min Search API limit, resuming exactly where it left off on restart. Grows every time it runs.
+            </div>
+            <div style="padding: 16px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Crawler</div>
+                <div style="font-size: 14px; font-weight: 700;" id="crawl-stat-running">—</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Repos Indexed (real, persisted)</div>
+                <div style="font-size: 14px; font-weight: 700; color: #38bdf8;" id="crawl-stat-total">—</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Partitions Exhausted</div>
+                <div style="font-size: 14px; font-weight: 700; color: #c084fc;" id="crawl-stat-partitions">—</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">GitHub Search Rate Limit Left</div>
+                <div style="font-size: 14px; font-weight: 700; color: #fbbf24;" id="crawl-stat-ratelimit">—</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);">Last Real Search Query</div>
+                <div style="font-size: 12px; font-weight: 700; color: #4ade80;" id="crawl-stat-lastquery">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="flex: 1;">
+            <div class="panel-header">
+              <span class="panel-title">📚 Browse Full Persisted Index</span>
+              <input type="text" id="db-browse-search" class="form-control" placeholder="Search name/description..." style="width: 220px;">
+            </div>
+            <div class="repos-grid" id="db-browse-grid-container" style="padding: 14px;"></div>
           </div>
         </div>
       </section>

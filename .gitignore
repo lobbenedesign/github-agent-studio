@@ -3,3 +3,4 @@ bun.lockb
 *.log
 .DS_Store
 data/catalog.json
+data/repos.db*

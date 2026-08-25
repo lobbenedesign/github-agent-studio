@@ -175,4 +175,64 @@ export class GitHubApiClient {
       topics: d.topics || []
     }));
   }
+
+  /**
+   * Real version tree: merges GitHub's real Tags API (every tag, lightweight,
+   * no message) with the real Releases API (only tags someone published a
+   * release for, with real release notes and publish date) into one
+   * chronological list. Most repos tag more often than they release, so the
+   * tag list is usually the fuller picture; releases add the human-written
+   * notes where they exist.
+   */
+  public async fetchVersionHistory(ownerRepoOrUrl: string): Promise<{
+    fullName: string;
+    versions: { tag: string; publishedAt: string | null; releaseName: string | null; releaseNotesExcerpt: string | null; url: string; isRelease: boolean }[];
+    latestTag: string | null;
+    latestRelease: string | null;
+  }> {
+    const { owner, repo } = parseOwnerRepo(ownerRepoOrUrl);
+    const fullName = `${owner}/${repo}`;
+
+    const [tagsRes, releasesRes] = await Promise.all([
+      fetch(`https://api.github.com/repos/${owner}/${repo}/tags?per_page=100`, { headers: authHeaders() }),
+      fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`, { headers: authHeaders() })
+    ]);
+
+    if (!tagsRes.ok && !releasesRes.ok) {
+      throw new GitHubApiFetchError(tagsRes.status, `could not fetch version history for ${fullName}: tags=${tagsRes.status} releases=${releasesRes.status}`);
+    }
+
+    const tags: any[] = tagsRes.ok ? await tagsRes.json() : [];
+    const releases: any[] = releasesRes.ok ? await releasesRes.json() : [];
+    const releaseByTag = new Map(releases.map((r) => [r.tag_name, r]));
+
+    const versions = tags.map((t) => {
+      const rel = releaseByTag.get(t.name);
+      return {
+        tag: t.name,
+        publishedAt: rel?.published_at ?? null,
+        releaseName: rel?.name ?? null,
+        releaseNotesExcerpt: rel?.body ? String(rel.body).slice(0, 400) : null,
+        url: rel?.html_url ?? `https://github.com/${fullName}/releases/tag/${t.name}`,
+        isRelease: !!rel
+      };
+    });
+
+    // Tags API doesn't sort by date (it's commit-graph order, roughly newest
+    // first already, but not guaranteed) — releases we DO know are date-sorted
+    // by GitHub, so prefer that ordering where we can attach a real date.
+    versions.sort((a, b) => {
+      if (a.publishedAt && b.publishedAt) return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      if (a.publishedAt) return -1;
+      if (b.publishedAt) return 1;
+      return 0;
+    });
+
+    return {
+      fullName,
+      versions,
+      latestTag: tags[0]?.name ?? null,
+      latestRelease: releases[0]?.tag_name ?? null
+    };
+  }
 }

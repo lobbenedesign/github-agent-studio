@@ -20,11 +20,90 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDependencyAuditor();
   setupSimilarRepoFinder();
   setupSQLStudio();
+  setupDeepCrawler();
   fetchCatalog();
   fetchWikiArchive();
   fetchDaemonTelemetry();
   fetchCompetitorMatrix();
 });
+
+// Deep Crawler — real, continuously-growing public repo index
+function setupDeepCrawler() {
+  const btnStart = document.getElementById("btn-crawl-start");
+  const btnStop = document.getElementById("btn-crawl-stop");
+  const btnTick = document.getElementById("btn-crawl-tick");
+  const searchInput = document.getElementById("db-browse-search");
+  if (!btnStart) return;
+
+  btnStart.addEventListener("click", async () => {
+    await fetch("/api/crawl/start", { method: "POST" });
+    fetchCrawlStatus();
+  });
+  btnStop.addEventListener("click", async () => {
+    await fetch("/api/crawl/stop", { method: "POST" });
+    fetchCrawlStatus();
+  });
+  btnTick.addEventListener("click", async () => {
+    await fetch("/api/crawl/tick", { method: "POST" });
+    fetchCrawlStatus();
+    fetchDbBrowse();
+  });
+  let searchDebounce;
+  searchInput?.addEventListener("input", () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(fetchDbBrowse, 350);
+  });
+
+  fetchCrawlStatus();
+  fetchDbBrowse();
+  // Poll real status every 4s while the tab exists (cheap local read, not a GitHub API call).
+  setInterval(fetchCrawlStatus, 4000);
+  setInterval(() => {
+    const pane = document.getElementById("tab-deepcrawl");
+    if (pane && pane.classList.contains("active")) fetchDbBrowse();
+  }, 6000);
+}
+
+async function fetchCrawlStatus() {
+  const el = document.getElementById("crawl-stat-running");
+  if (!el) return;
+  try {
+    const res = await fetch("/api/crawl/status");
+    const s = await res.json();
+    document.getElementById("crawl-stat-running").innerHTML = s.running
+      ? '<span style="color:#4ade80;">🟢 Running</span>'
+      : '<span style="color:#94a3b8;">⏸️ Stopped</span>';
+    document.getElementById("crawl-stat-total").textContent = `${s.totalReposIndexed.toLocaleString()} repos`;
+    document.getElementById("crawl-stat-partitions").textContent = `${s.partitions.exhausted} / ${s.partitions.totalPartitions}`;
+    document.getElementById("crawl-stat-ratelimit").textContent = s.rateLimit.remaining !== null ? `${s.rateLimit.remaining} / 30 per min` : "—";
+    const lt = s.lastTick;
+    document.getElementById("crawl-stat-lastquery").textContent = lt ? (lt.detail || lt.action) : "no ticks yet";
+  } catch {}
+}
+
+async function fetchDbBrowse() {
+  const container = document.getElementById("db-browse-grid-container");
+  if (!container) return;
+  const q = document.getElementById("db-browse-search")?.value || "";
+  try {
+    const res = await fetch(`/api/db/browse?limit=30&sortBy=stars${q ? `&q=${encodeURIComponent(q)}` : ""}`);
+    const data = await res.json();
+    container.innerHTML = `<div style="grid-column:1/-1;font-size:11px;color:var(--text-muted);margin-bottom:6px;">${data.total.toLocaleString()} repos match${q ? ` "${escapeHtml(q)}"` : " (showing top 30 by stars)"}</div>`;
+    data.rows.forEach(r => {
+      const card = document.createElement("div");
+      card.className = "repo-card";
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#38bdf8;">${escapeHtml(r.fullName)}</strong>
+          <span style="font-size:11px;color:var(--text-muted);">${escapeHtml(r.language || "")}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">${escapeHtml((r.description || "").slice(0, 140))}</div>
+        <div style="font-size:11px;color:#fbbf24;">★ ${r.stars.toLocaleString()} · ⑂ ${r.forks.toLocaleString()} · indexed ${r.firstIndexedAt.slice(0, 10)}</div>
+      `;
+      container.appendChild(card);
+    });
+  } catch {}
+}
 
 function setupTabs() {
   const tabs = document.querySelectorAll(".nav-tab");

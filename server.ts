@@ -13,6 +13,9 @@ import { SQLQueryEngine } from "./src/sql_query_engine";
 import { GitHubInsightBenchmark } from "./src/competitor_benchmark";
 import { DependencyAuditor } from "./src/dependency_auditor";
 import { SimilarRepoFinder } from "./src/similar_repo_finder";
+import { RepoDatabase } from "./src/repo_database";
+import { DeepCrawler } from "./src/deep_crawler";
+import { GitHubApiClient } from "./src/github_api_client";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -27,6 +30,9 @@ const sqlEngine = new SQLQueryEngine();
 const benchmark = new GitHubInsightBenchmark();
 const depAuditor = new DependencyAuditor();
 const similarFinder = new SimilarRepoFinder();
+const repoDb = new RepoDatabase();
+const deepCrawler = new DeepCrawler(repoDb);
+const apiClientForVersions = new GitHubApiClient();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
@@ -188,6 +194,63 @@ const server = Bun.serve({
     // 9. 5-Competitor Matrix
     if (url.pathname === "/api/competitors" && req.method === "GET") {
       return new Response(JSON.stringify(benchmark.getComparison()), { headers });
+    }
+
+    // 7. Deep Crawler — a real, continuously-growing public-repo index.
+    // See src/deep_crawler.ts for what this honestly is/isn't (not "all of
+    // GitHub" — a broad, bounded, ever-growing partition set).
+    if (url.pathname === "/api/crawl/start" && req.method === "POST") {
+      deepCrawler.start();
+      return new Response(JSON.stringify({ running: true }), { headers });
+    }
+    if (url.pathname === "/api/crawl/stop" && req.method === "POST") {
+      deepCrawler.stop();
+      return new Response(JSON.stringify({ running: false }), { headers });
+    }
+    if (url.pathname === "/api/crawl/tick" && req.method === "POST") {
+      // Manual single real search request — useful to verify behavior
+      // without waiting for the interval, or to advance the crawl by
+      // exactly one step for testing.
+      const result = await deepCrawler.tick();
+      return new Response(JSON.stringify(result), { headers });
+    }
+    if (url.pathname === "/api/crawl/status" && req.method === "GET") {
+      return new Response(JSON.stringify({
+        running: deepCrawler.isRunning(),
+        lastTick: deepCrawler.getLastTick(),
+        rateLimit: deepCrawler.getRateLimitInfo(),
+        partitions: repoDb.crawlStatus(),
+        totalReposIndexed: repoDb.count()
+      }), { headers });
+    }
+
+    // 7b. Browse the real persistent index (data/repos.db) — separate from
+    // the small in-memory seed catalog used by /api/repos/list.
+    if (url.pathname === "/api/db/browse" && req.method === "GET") {
+      const letter = url.searchParams.get("letter") || undefined;
+      const language = url.searchParams.get("language") || undefined;
+      const minStars = url.searchParams.get("minStars") ? Number(url.searchParams.get("minStars")) : undefined;
+      const query = url.searchParams.get("q") || undefined;
+      const sortBy = (url.searchParams.get("sortBy") as any) || "stars";
+      const sortDir = (url.searchParams.get("sortDir") as any) || "desc";
+      const limit = url.searchParams.get("limit") ? Number(url.searchParams.get("limit")) : 50;
+      const offset = url.searchParams.get("offset") ? Number(url.searchParams.get("offset")) : 0;
+      const result = repoDb.browse({ letter, language, minStars, query, sortBy, sortDir, limit, offset });
+      return new Response(JSON.stringify(result), { headers });
+    }
+    if (url.pathname === "/api/db/languages" && req.method === "GET") {
+      return new Response(JSON.stringify(repoDb.languageBreakdown()), { headers });
+    }
+
+    // 7c. Real version tree (tags + releases) for any public repo, fetched on demand.
+    if (url.pathname === "/api/repos/versions" && req.method === "GET") {
+      try {
+        const repo = url.searchParams.get("repo") || "";
+        const history = await apiClientForVersions.fetchVersionHistory(repo);
+        return new Response(JSON.stringify(history), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
     }
 
     return new Response("Not Found", { status: 404, headers });
