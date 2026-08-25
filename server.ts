@@ -11,6 +11,8 @@ import { ForkHunter } from "./src/fork_hunter";
 import { SecurityShield } from "./src/security_shield";
 import { SQLQueryEngine } from "./src/sql_query_engine";
 import { GitHubInsightBenchmark } from "./src/competitor_benchmark";
+import { DependencyAuditor } from "./src/dependency_auditor";
+import { SimilarRepoFinder } from "./src/similar_repo_finder";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -23,6 +25,8 @@ const forkHunter = new ForkHunter();
 const securityShield = new SecurityShield();
 const sqlEngine = new SQLQueryEngine();
 const benchmark = new GitHubInsightBenchmark();
+const depAuditor = new DependencyAuditor();
+const similarFinder = new SimilarRepoFinder();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
@@ -120,6 +124,28 @@ const server = Bun.serve({
       const repo = url.searchParams.get("repo") || "expressjs/express";
       const report = await securityShield.scanSecurity(repo);
       return new Response(JSON.stringify(report), { headers });
+    }
+
+    // 5b. Dependency Freshness Audit (real npm/PyPI registry lookups)
+    if (url.pathname === "/api/deps/audit" && req.method === "GET") {
+      try {
+        const repo = url.searchParams.get("repo") || "expressjs/express";
+        const report = await depAuditor.auditDependencies(repo);
+        return new Response(JSON.stringify(report), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
+    }
+
+    // 5c. Similar Repository Finder (real GitHub Search API by topic/language)
+    if (url.pathname === "/api/repos/similar" && req.method === "GET") {
+      try {
+        const repo = url.searchParams.get("repo") || "expressjs/express";
+        const report = await similarFinder.findSimilar(repo);
+        return new Response(JSON.stringify(report), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
     }
 
     // 6. Execute SQL Query (Real bun:sqlite C-Engine)

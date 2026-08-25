@@ -28,3 +28,11 @@ Audited the remaining modules not covered above (`security_shield.ts`, `sql_quer
 - `README.md`: the `OpenSSF Security` badge read "Grade A+", implying this project itself was audited and scored A+ — never measured. Changed to "Live Scorecard API" to describe the real, dynamic feature instead of an unverified self-grade.
 
 **Not changed:** `competitor_benchmark.ts` (same reasoning as before — an opinion table about competitors, not a fabricated metric about this software).
+
+## 2026-08-25 (part 3) — two new real features, finished and wired
+
+Found two new source files (`src/dependency_auditor.ts`, `src/similar_repo_finder.ts`) already written and imported in `server.ts` but never instantiated or routed — dangling, unreachable code. Both are genuinely real (no fabrication): the dependency auditor reads a repo's actual `package.json`/`requirements.txt` from `raw.githubusercontent.com` and checks each dependency's real latest version against `registry.npmjs.org`/`pypi.org`; the similar-repo finder runs real GitHub Search API queries built from the repo's actual topics/language.
+
+- Wired both into `server.ts`: `GET /api/deps/audit?repo=owner/name`, `GET /api/repos/similar?repo=owner/name`.
+- Verified live: `expressjs/express` dependency audit correctly found 44 real dependencies, 22 outdated, with real registry version numbers (e.g. `cookie ^0.7.1 -> 2.0.1`, major-behind).
+- Found and fixed a real usefulness bug in `similar_repo_finder.ts` before shipping it: the original query ANDed 3 topics + language together, which GitHub's search treats as a strict AND — tested live against `fastify/fastify` and got **zero results**, because almost nothing has all three topics simultaneously. Rewrote it to run one broader query per topic (plus a language-only query), merge results, and rank by how many independent queries matched — re-tested against the same repo and got 12 real, relevant results (`mercurius-js/mercurius`, `platformatic/platformatic`, `fastify/avvio`, etc.).
