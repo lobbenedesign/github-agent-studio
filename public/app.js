@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDaemonSync();
   setupForkHunter();
   setupSecurityShield();
+  setupDependencyAuditor();
+  setupSimilarRepoFinder();
   setupSQLStudio();
   fetchCatalog();
   fetchWikiArchive();
@@ -212,6 +214,87 @@ function setupSecurityShield() {
       btn.textContent = "🛡️ Run Security Audit";
     } catch {
       btn.textContent = "🛡️ Run Security Audit";
+    }
+  });
+}
+
+// 4b. Dependency Freshness Audit (real npm/PyPI registry lookups)
+function setupDependencyAuditor() {
+  const btn = document.getElementById("btn-audit-deps");
+  const box = document.getElementById("deps-report-container");
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-deps-repo").value;
+    btn.textContent = "📦 Reading manifest + querying registries...";
+
+    try {
+      const res = await fetch(`/api/deps/audit?repo=${encodeURIComponent(target)}`);
+      const r = await res.json();
+
+      box.style.display = "block";
+      if (!r.manifestFound) {
+        box.innerHTML = `<div style="padding: 12px; color: var(--text-muted); font-size: 12px;">Nessun package.json o requirements.txt trovato sul branch di default di ${r.repoFullName}.</div>`;
+      } else {
+        box.innerHTML = `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+            <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+              Manifest: <a href="${r.manifestUrl}" target="_blank" style="color: #38bdf8;">${r.manifestFound}</a> ·
+              ${r.totalDependencies} dipendenze · <strong style="color:#f87171;">${r.outdatedCount} non aggiornate</strong> (${r.majorBehindCount} major)
+            </div>
+            <table style="width:100%; font-size: 11.5px; font-family: var(--font-mono); border-collapse: collapse;">
+              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Pacchetto</th><th>In uso</th><th>Ultima</th><th>Stato</th></tr></thead>
+              <tbody>
+                ${r.dependencies.slice(0, 25).map(d => `
+                  <tr style="border-top: 1px solid var(--border-color);">
+                    <td style="padding: 4px 0;">${d.name}</td>
+                    <td>${d.currentVersion ?? "?"}</td>
+                    <td>${d.latestVersion ?? "?"}</td>
+                    <td style="color: ${d.status === 'up-to-date' ? '#4ade80' : d.status === 'major-behind' ? '#f87171' : d.status === 'unknown' ? 'var(--text-muted)' : '#facc15'};">${d.status}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+      btn.textContent = "📦 Audit Dependencies (npm/PyPI reali)";
+    } catch {
+      btn.textContent = "📦 Audit Dependencies (npm/PyPI reali)";
+    }
+  });
+}
+
+// 4c. Similar Repository Finder (real GitHub Search API)
+function setupSimilarRepoFinder() {
+  const btn = document.getElementById("btn-find-similar");
+  const box = document.getElementById("similar-report-container");
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-similar-repo").value;
+    btn.textContent = "🧭 Querying GitHub Search...";
+
+    try {
+      const res = await fetch(`/api/repos/similar?repo=${encodeURIComponent(target)}`);
+      const r = await res.json();
+
+      box.style.display = "block";
+      box.innerHTML = `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+          <div style="margin-bottom: 12px; font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">query: ${r.queryUsed}</div>
+          <div class="repos-grid">
+            ${r.results.map(x => `
+              <div class="repo-card">
+                <a href="${x.url}" target="_blank" style="color:#38bdf8; font-weight:600; font-size:13px;">${x.fullName}</a>
+                <div style="font-size:11.5px; color: var(--text-muted); margin: 4px 0;">${x.description || ""}</div>
+                <div style="font-size:11px;">⭐ ${x.stars.toLocaleString()} · ${x.language} · match ${x.matchScore}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      btn.textContent = "🧭 Trova Repo Simili (GitHub Search reale)";
+    } catch {
+      btn.textContent = "🧭 Trova Repo Simili (GitHub Search reale)";
     }
   });
 }

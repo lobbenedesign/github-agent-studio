@@ -116,6 +116,32 @@
             <div id="security-report-container" style="display: none;"></div>
           </div>
         </div>
+
+        <div class="panel" style="max-width: 900px; margin: 20px auto 0;">
+          <div class="panel-header">
+            <span class="panel-title">📦 Dependency Freshness Audit</span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-deps-repo" class="form-control" style="flex: 1;" value="expressjs/express">
+              <button class="btn btn-primary" id="btn-audit-deps">📦 Audit Dependencies (npm/PyPI reali)</button>
+            </div>
+            <div id="deps-report-container" style="display: none;"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="max-width: 900px; margin: 20px auto 0;">
+          <div class="panel-header">
+            <span class="panel-title">🧭 Similar Repository Finder</span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-similar-repo" class="form-control" style="flex: 1;" value="expressjs/express">
+              <button class="btn btn-primary" id="btn-find-similar">🧭 Trova Repo Simili (GitHub Search reale)</button>
+            </div>
+            <div id="similar-report-container" style="display: none;"></div>
+          </div>
+        </div>
       </section>
 
       <!-- TAB 4: SQL QUERY STUDIO -->
