@@ -20,6 +20,8 @@
 > **2026-08-25 update:** the Fork Hunter and the 24h Crawler Daemon were previously fabricating data — the "commits ahead" figure was a formula (`12 + i*6`), the enhancement text was 3 fixed strings regardless of the actual fork, and "new repos discovered" was a hardcoded `+2` per run with no real API call in the loop. Both now call the real GitHub compare/search APIs; see `CHANGELOG.md`. One real operational limit this introduces: an unauthenticated client is capped at 60 GitHub API requests/hour — set `GITHUB_TOKEN` in the environment for the real 5000/hour authenticated limit, especially before running `/api/sync/run` repeatedly.
 >
 > **2026-08-25 update (2):** the Dependency Freshness Auditor now also does a real known-vulnerability scan against [OSV.dev](https://osv.dev) (the open vulnerability database GitHub's own Dependabot alerts are built on) — closing the gap this project had against Socket.dev/Dependabot-style tools, which flag *known CVEs on the exact pinned version*, not just "your version is old". See `CHANGELOG.md` for how this was verified.
+>
+> **2026-08-25 update (3):** added a real Socket.dev-style **supply-chain risk scan** — install-time lifecycle scripts (`preinstall`/`install`/`postinstall`) read from the live npm packument, plus typosquat detection confirmed via real npm download-count ratios (not name-similarity alone). See `CHANGELOG.md`.
 
 ---
 
@@ -42,7 +44,9 @@
    * Generates clean, image-free documentation archives with direct access links.
 7. **📦 Dependency Freshness & Known-Vulnerability Auditor (Dependabot/Renovate/Socket.dev-style)**:
    * Reads a repo's real `package.json`/`requirements.txt`, checks every dependency's actual latest version against the real npm/PyPI registries, **and** checks the exact pinned version against [OSV.dev](https://osv.dev)'s real, open vulnerability database for known CVEs/advisories — the same source GitHub's own Dependabot alerts use.
-8. **🧭 Similar Repository Finder**:
+8. **🚨 Supply-Chain Risk Scan (npm, Socket.dev-style)**:
+   * For every npm dependency: reads the live npm packument for the exact pinned version and flags real `preinstall`/`install`/`postinstall` lifecycle scripts (arbitrary code that runs at install time), and flags likely typosquats — a package name 1-2 edits from a well-known popular package **confirmed** by a real ≥1000x monthly-download disparity via the npm downloads API, not name similarity alone.
+9. **🧭 Similar Repository Finder**:
    * Finds related projects via the real GitHub Search API, built from the target repo's actual topics and language.
 
 ---
@@ -54,6 +58,7 @@
 | **Active Fork Hunter** | **✓ Built-in** | ✓ Yes | ✗ No | ✗ No | ✗ No |
 | **Security Shield (CVE/Binaries)** | **✓ Built-in** | ✗ No | ✓ Yes | ✗ No | ✗ No |
 | **Dependency CVE Scan (OSV.dev)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **Supply-Chain Risk (install scripts + typosquat)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
 | **SQL Query Engine** | **✓ Built-in** | ✗ No | ✗ No | ✓ Yes | ✗ No |
 | **A-to-Z Categorization** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
 | **Forkability Score (0-100)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
@@ -88,7 +93,8 @@ Open your browser at **`http://localhost:3011`**.
 4. **⏰ Demone di Scansione Automatica ogni 24 Ore**: Aggiorna lo stato dei repository, le nuove release e la crescita delle stelle ogni giorno.
 5. **📖 Compendio Wiki in Markdown**: Esporta istantaneamente un archivio testuale pulito con link diretti per lo studio strategico.
 6. **📦 Audit Dipendenze & Vulnerabilità Note (stile Dependabot/Renovate/Socket.dev)**: legge il vero `package.json`/`requirements.txt` del repo, confronta ogni dipendenza con l'ultima versione reale su npm/PyPI e verifica la versione esatta usata contro il database reale delle vulnerabilità note [OSV.dev](https://osv.dev) — la stessa fonte usata dagli alert reali di GitHub Dependabot.
-7. **🧭 Ricerca Repository Simili**: trova progetti correlati tramite le vere API di ricerca GitHub, basate sui topic e sul linguaggio reali del repo target.
+7. **🚨 Scan Rischio Supply-Chain (npm, stile Socket.dev)**: per ogni dipendenza npm legge il vero packument della versione esatta in uso e segnala script di lifecycle (`preinstall`/`install`/`postinstall`) reali, più sospetti typosquat confermati da un vero rapporto ≥1000x nei download mensili reali (API npm), non solo dalla somiglianza del nome.
+8. **🧭 Ricerca Repository Simili**: trova progetti correlati tramite le vere API di ricerca GitHub, basate sui topic e sul linguaggio reali del repo target.
 
 ---
 

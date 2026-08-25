@@ -13,6 +13,7 @@
 
 import { GitHubApiClient, parseOwnerRepo } from "./github_api_client";
 import { scanForVulnerabilities, VulnMatch } from "./vulnerability_scanner";
+import { scanSupplyChainRisk, SupplyChainRisk } from "./supply_chain_scanner";
 
 export interface DependencyAuditEntry {
   name: string;
@@ -25,6 +26,9 @@ export interface DependencyAuditEntry {
   /** Real known vulnerabilities affecting `currentVersion`, from OSV.dev. `null` means
    *  "not scanned" (e.g. no resolvable current version) — never means "confirmed safe". */
   vulnerabilities: VulnMatch[] | null;
+  /** Real supply-chain risk signals (install scripts + confirmed typosquat) from the
+   *  live npm registry. `null` means "not scanned" (non-npm ecosystem), never "safe". */
+  supplyChainRisk: SupplyChainRisk | null;
 }
 
 export interface DependencyAuditReport {
@@ -36,6 +40,8 @@ export interface DependencyAuditReport {
   majorBehindCount: number;
   vulnerableCount: number;
   totalVulnerabilities: number;
+  installScriptCount: number;
+  typosquatSuspectCount: number;
   dependencies: DependencyAuditEntry[];
   checkedAt: string;
 }
@@ -131,6 +137,8 @@ export class DependencyAuditor {
       majorBehindCount: 0,
       vulnerableCount: 0,
       totalVulnerabilities: 0,
+      installScriptCount: 0,
+      typosquatSuspectCount: 0,
       dependencies: [],
       checkedAt: new Date().toISOString()
     };
@@ -142,14 +150,14 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
+        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
       }
       const data = await res.json();
       const latestVersion: string = data.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null };
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null };
     } catch {
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
     }
   }
 
@@ -159,14 +167,14 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
+        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
       }
       const data = await res.json();
       const latestVersion: string = data.info?.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null };
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null };
     } catch {
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null };
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
     }
   }
 
@@ -196,6 +204,23 @@ export class DependencyAuditor {
       if (vulnMap.has(key)) d.vulnerabilities = vulnMap.get(key)!;
     }
 
+    // Real supply-chain risk scan (install scripts + confirmed typosquat) against the
+    // live npm registry. npm-only — see supply_chain_scanner.ts for why PyPI isn't covered.
+    const npmScannable = dependencies.filter((d) => d.ecosystem === "npm");
+    const supplyChainMap = await scanSupplyChainRisk(
+      npmScannable.map((d) => ({
+        key: `${d.ecosystem}:${d.name}:${d.currentVersion}`,
+        name: d.name,
+        ecosystem: d.ecosystem,
+        currentVersion: d.currentVersion
+      }))
+    );
+    for (const d of dependencies) {
+      if (d.ecosystem !== "npm") continue;
+      const key = `${d.ecosystem}:${d.name}:${d.currentVersion}`;
+      if (supplyChainMap.has(key)) d.supplyChainRisk = supplyChainMap.get(key)!;
+    }
+
     const severityRank: Record<DependencyAuditEntry["status"], number> = {
       "major-behind": 0,
       "minor-behind": 1,
@@ -203,10 +228,16 @@ export class DependencyAuditor {
       unknown: 3,
       "up-to-date": 4
     };
+    const riskRank = (d: DependencyAuditEntry): number => {
+      if ((d.vulnerabilities?.length || 0) > 0) return 0;
+      if (d.supplyChainRisk?.typosquatSuspect) return 0;
+      if (d.supplyChainRisk?.hasInstallScripts) return 1;
+      return 2;
+    };
     const sorted = [...dependencies].sort((a, b) => {
-      const aVuln = (a.vulnerabilities?.length || 0) > 0 ? 0 : 1;
-      const bVuln = (b.vulnerabilities?.length || 0) > 0 ? 0 : 1;
-      if (aVuln !== bVuln) return aVuln - bVuln;
+      const aRisk = riskRank(a);
+      const bRisk = riskRank(b);
+      if (aRisk !== bRisk) return aRisk - bRisk;
       return severityRank[a.status] - severityRank[b.status];
     });
     const vulnerableEntries = sorted.filter((d) => (d.vulnerabilities?.length || 0) > 0);
@@ -219,6 +250,8 @@ export class DependencyAuditor {
       majorBehindCount: sorted.filter((d) => d.status === "major-behind").length,
       vulnerableCount: vulnerableEntries.length,
       totalVulnerabilities: vulnerableEntries.reduce((sum, d) => sum + (d.vulnerabilities?.length || 0), 0),
+      installScriptCount: sorted.filter((d) => d.supplyChainRisk?.hasInstallScripts).length,
+      typosquatSuspectCount: sorted.filter((d) => d.supplyChainRisk?.typosquatSuspect).length,
       dependencies: sorted,
       checkedAt: new Date().toISOString()
     };

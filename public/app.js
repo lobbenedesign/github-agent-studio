@@ -240,10 +240,12 @@ function setupDependencyAuditor() {
             <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
               Manifest: <a href="${r.manifestUrl}" target="_blank" style="color: #38bdf8;">${r.manifestFound}</a> ·
               ${r.totalDependencies} dipendenze · <strong style="color:#f87171;">${r.outdatedCount} non aggiornate</strong> (${r.majorBehindCount} major) ·
-              <strong style="color:${r.vulnerableCount > 0 ? '#ef4444' : '#4ade80'};">${r.vulnerableCount} pacchetti con CVE/advisory note (OSV.dev)</strong>
+              <strong style="color:${r.vulnerableCount > 0 ? '#ef4444' : '#4ade80'};">${r.vulnerableCount} pacchetti con CVE/advisory note (OSV.dev)</strong> ·
+              <strong style="color:${(r.installScriptCount + r.typosquatSuspectCount) > 0 ? '#fb923c' : '#4ade80'};">${r.installScriptCount} con install script</strong> ·
+              <strong style="color:${r.typosquatSuspectCount > 0 ? '#ef4444' : '#4ade80'};">${r.typosquatSuspectCount} possibili typosquat</strong>
             </div>
             <table style="width:100%; font-size: 11.5px; font-family: var(--font-mono); border-collapse: collapse;">
-              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Pacchetto</th><th>In uso</th><th>Ultima</th><th>Stato</th><th>Vulnerabilità note (OSV.dev)</th></tr></thead>
+              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Pacchetto</th><th>In uso</th><th>Ultima</th><th>Stato</th><th>Vulnerabilità note (OSV.dev)</th><th>Supply-chain risk</th></tr></thead>
               <tbody>
                 ${r.dependencies.slice(0, 25).map(d => `
                   <tr style="border-top: 1px solid var(--border-color); vertical-align: top;">
@@ -258,11 +260,24 @@ function setupDependencyAuditor() {
                           ? 'nessuna nota'
                           : d.vulnerabilities.map(v => `<a href="${v.url}" target="_blank" style="color:#ef4444;" title="${(v.summary || v.id).replace(/"/g, '&quot;')}">${v.id}</a>`).join('<br>')}
                     </td>
+                    <td>
+                      ${d.supplyChainRisk === null
+                        ? '<span style="color:var(--text-muted);">—</span>'
+                        : [
+                            d.supplyChainRisk.hasInstallScripts
+                              ? `<span style="color:#fb923c;" title="${Object.entries(d.supplyChainRisk.installScripts).map(([k, v]) => k + ': ' + v).join(' | ').replace(/"/g, '&quot;')}">⚙️ install script (${Object.keys(d.supplyChainRisk.installScripts).join(', ')})</span>`
+                              : '',
+                            d.supplyChainRisk.typosquatSuspect
+                              ? `<span style="color:#ef4444;" title="edit distance ${d.supplyChainRisk.typosquatSuspect.editDistance}, ${d.supplyChainRisk.typosquatSuspect.referenceDownloadsLastMonth.toLocaleString()} vs ${d.supplyChainRisk.typosquatSuspect.candidateDownloadsLastMonth.toLocaleString()} download/mese (${d.supplyChainRisk.typosquatSuspect.downloadRatio}x)">🚨 possibile typosquat di "${d.supplyChainRisk.typosquatSuspect.similarTo}"</span>`
+                              : ''
+                          ].filter(Boolean).join('<br>') || '<span style="color:#4ade80;">pulito</span>'
+                      }
+                    </td>
                   </tr>
                 `).join("")}
               </tbody>
             </table>
-            <div style="margin-top: 10px; font-size: 10.5px; color: var(--text-muted);">Fonte vulnerabilità: <a href="https://osv.dev" target="_blank" style="color:#38bdf8;">OSV.dev</a> (stesso database usato dagli alert reali di GitHub Dependabot). "—" = versione non risolvibile, non scansionata; "nessuna nota" = nessun advisory trovato per quella versione esatta, non garanzia di sicurezza.</div>
+            <div style="margin-top: 10px; font-size: 10.5px; color: var(--text-muted);">Fonte vulnerabilità: <a href="https://osv.dev" target="_blank" style="color:#38bdf8;">OSV.dev</a> (stesso database usato dagli alert reali di GitHub Dependabot). "—" = versione non risolvibile, non scansionata; "nessuna nota"/"pulito" = nessun segnale trovato, non garanzia di sicurezza. Supply-chain risk (stile Socket.dev): install script letti dal packument reale npm per la versione esatta in uso; typosquat confermato solo se il nome è a 1-2 modifiche da un pacchetto molto popolare E quel pacchetto ha ≥1000x i download mensili reali (api.npmjs.org) — non solo somiglianza del nome.</div>
           </div>
         `;
       }
