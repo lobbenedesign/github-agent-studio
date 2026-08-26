@@ -29,6 +29,10 @@ export interface DependencyAuditEntry {
   /** Real supply-chain risk signals (install scripts + confirmed typosquat) from the
    *  live npm registry. `null` means "not scanned" (non-npm ecosystem), never "safe". */
   supplyChainRisk: SupplyChainRisk | null;
+  /** Real declared license identifier read straight from the same registry response
+   *  already fetched for freshness (npm packument `license` field / PyPI `info.license`
+   *  or its classifiers). `null` means the registry didn't declare one — never "MIT by default". */
+  license: string | null;
 }
 
 export interface DependencyAuditReport {
@@ -161,14 +165,19 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
+        return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null, license: null };
       }
       const data = await res.json();
       const latestVersion: string = data.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null };
+      // Real license field from the same npm packument response already fetched
+      // for freshness — npm's `license` is either a string SPDX id (modern
+      // packages) or, in older packages, an object `{type: "MIT", ...}`.
+      const rawLicense = data.license;
+      const license: string | null = typeof rawLicense === "string" ? rawLicense : (rawLicense && typeof rawLicense === "object" && rawLicense.type) ? rawLicense.type : null;
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null, license };
     } catch {
-      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
+      return { name, ecosystem: "npm", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null, license: null };
     }
   }
 
@@ -178,14 +187,24 @@ export class DependencyAuditor {
     try {
       const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
-        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
+        return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null, license: null };
       }
       const data = await res.json();
       const latestVersion: string = data.info?.version;
       const status = computeStatus(parseSemver(currentVersion), parseSemver(latestVersion));
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null };
+      // PyPI's `info.license` free-text field is often empty/junk ("UNKNOWN"); the
+      // Trove classifiers (`License :: OSI Approved :: MIT License`) are the more
+      // reliable real signal PyPI actually curates, so prefer those when present.
+      const classifierLicense: string | null = (() => {
+        const classifiers: string[] = data.info?.classifiers || [];
+        const lic = classifiers.find((c) => c.startsWith("License :: OSI Approved ::"));
+        return lic ? lic.replace("License :: OSI Approved ::", "").trim() : null;
+      })();
+      const rawLicense: string | null = data.info?.license && data.info.license !== "UNKNOWN" ? data.info.license : null;
+      const license = classifierLicense || rawLicense;
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion, status, registryUrl, vulnerabilities: null, supplyChainRisk: null, license };
     } catch {
-      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null };
+      return { name, ecosystem: "pypi", manifestRange: range, currentVersion, latestVersion: null, status: "unknown", registryUrl, vulnerabilities: null, supplyChainRisk: null, license: null };
     }
   }
 

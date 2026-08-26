@@ -18,6 +18,8 @@ import { DeepCrawler } from "./src/deep_crawler";
 import { GitHubApiClient } from "./src/github_api_client";
 import { CodeAnalyzer } from "./src/code_analyzer";
 import { CodeEvaluator } from "./src/code_evaluator";
+import { SecretScanner } from "./src/secret_scanner";
+import { LicenseAuditor } from "./src/license_auditor";
 import { detectCategory } from "./src/category_detector";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -63,6 +65,8 @@ const deepCrawler = new DeepCrawler(repoDb);
 })();
 const apiClientForVersions = new GitHubApiClient();
 const codeAnalyzer = new CodeAnalyzer();
+const secretScanner = new SecretScanner();
+const licenseAuditor = new LicenseAuditor();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
@@ -401,6 +405,37 @@ const server = Bun.serve({
       const repo = url.searchParams.get("repo") || "";
       const cached = repoDb.getCodeAnalysis(repo);
       return new Response(JSON.stringify({ repo, cached }), { headers });
+    }
+
+    // 10. Real secret scanning (gitleaks-style regex signatures over real repo
+    // file contents fetched from GitHub). POST because it does real, bounded
+    // work (file tree + per-file raw fetches). See src/secret_scanner.ts for
+    // the exact signatures and their false-positive caveats.
+    if (url.pathname === "/api/security/secrets-scan" && req.method === "POST") {
+      try {
+        let body: any = {};
+        try { body = await req.json(); } catch {}
+        const repo = body.repo || url.searchParams.get("repo") || "";
+        const report = await secretScanner.scanRepoForSecrets(repo);
+        return new Response(JSON.stringify(report), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
+    }
+
+    // 11. Real license detection + dependency license compliance audit.
+    // Reuses the Dependency Auditor's real npm/PyPI registry data and
+    // GitHub's real license API — see src/license_auditor.ts.
+    if (url.pathname === "/api/license/audit" && req.method === "POST") {
+      try {
+        let body: any = {};
+        try { body = await req.json(); } catch {}
+        const repo = body.repo || url.searchParams.get("repo") || "";
+        const report = await licenseAuditor.auditLicenses(repo);
+        return new Response(JSON.stringify(report), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
     }
 
     return new Response("Not Found", { status: 404, headers });

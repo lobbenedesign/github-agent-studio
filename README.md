@@ -22,6 +22,8 @@
 > **2026-08-25 update (2):** the Dependency Freshness Auditor now also does a real known-vulnerability scan against [OSV.dev](https://osv.dev) (the open vulnerability database GitHub's own Dependabot alerts are built on) — closing the gap this project had against Socket.dev/Dependabot-style tools, which flag *known CVEs on the exact pinned version*, not just "your version is old". See `CHANGELOG.md` for how this was verified.
 >
 > **2026-08-25 update (3):** added a real Socket.dev-style **supply-chain risk scan** — install-time lifecycle scripts (`preinstall`/`install`/`postinstall`) read from the live npm packument, plus typosquat detection confirmed via real npm download-count ratios (not name-similarity alone). See `CHANGELOG.md`.
+>
+> **2026-08-26 update:** ran a real competitor research pass against 19 verified tools (Dependabot, Snyk, Socket.dev, Semgrep, CodeQL/GHAS, OSSF Scorecard/Allstar, TruffleHog, GitGuardian, FOSSA, Libraries.io, and more — full sourced writeup in [`COMPETITOR_RESEARCH.md`](./COMPETITOR_RESEARCH.md)) and closed the two highest-priority gaps it found: the Security Shield's "token leaks" mention had no real detection engine behind it, and the project never reported a repo's own license or its dependencies' licenses at all. Both are now real, see below.
 
 ---
 
@@ -48,6 +50,10 @@
    * For every npm dependency: reads the live npm packument for the exact pinned version and flags real `preinstall`/`install`/`postinstall` lifecycle scripts (arbitrary code that runs at install time), and flags likely typosquats — a package name 1-2 edits from a well-known popular package **confirmed** by a real ≥1000x monthly-download disparity via the npm downloads API, not name similarity alone.
 9. **🧭 Similar Repository Finder**:
    * Finds related projects via the real GitHub Search API, built from the target repo's actual topics and language.
+10. **🔑 Real Secret Scanner (TruffleHog/gitleaks-style)**:
+    * Fetches a repo's real file tree and a bounded sample of real file contents, then tests every line against regex signatures **transcribed from gitleaks' public default ruleset** (AWS keys, GitHub PATs classic + fine-grained, PEM private key blocks, Google/GCP API keys, Slack bot tokens & webhooks, Stripe secret keys, npm tokens, JWTs, Azure client secrets, plus a generic high-entropy assignment rule). Every match reports a real file path + line number + redacted match, never a fabricated finding. Honest about limits: this is pattern-shape matching, not TruffleHog's live-credential-verification — the UI states the real false-positive risk on every scan, and live-testing against `firebase/quickstart-js` genuinely triggered exactly that (10 generic-rule matches, all variable names like `documentById`, zero real secrets), while `expressjs/express` scanned clean.
+11. **⚖️ License Detection & Compliance Auditor (FOSSA/Libraries.io-style)**:
+    * Reads a target repo's real declared license (GitHub's `license.spdx_id`, the real root `LICENSE` file, and `package.json`'s `license` field when present) **and** every dependency's real declared license straight from the same npm/PyPI registry responses the Dependency Auditor already fetches for freshness — no extra fabricated calls. Classifies each into permissive/weak-copyleft/copyleft/unknown and flags the real, well-known compliance concern class of a copyleft dependency inside a permissively-licensed project. Verified against real repos: `expressjs/express` → MIT + 44/44 dependencies resolved, all permissive, zero flags (correct); `pa11y/pa11y-dashboard` → correctly detected as GPL-3.0 with an LGPL-3.0 and a GPL-3.0 real dependency.
 
 ---
 
@@ -59,6 +65,8 @@
 | **Security Shield (CVE/Binaries)** | **✓ Built-in** | ✗ No | ✓ Yes | ✗ No | ✗ No |
 | **Dependency CVE Scan (OSV.dev)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
 | **Supply-Chain Risk (install scripts + typosquat)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **Secret Scanning (gitleaks-style signatures)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
+| **License Detection & Compliance Flags** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
 | **SQL Query Engine** | **✓ Built-in** | ✗ No | ✗ No | ✓ Yes | ✗ No |
 | **A-to-Z Categorization** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
 | **Forkability Score (0-100)** | **✓ Built-in** | ✗ No | ✗ No | ✗ No | ✗ No |
@@ -95,6 +103,8 @@ Open your browser at **`http://localhost:3011`**.
 6. **📦 Audit Dipendenze & Vulnerabilità Note (stile Dependabot/Renovate/Socket.dev)**: legge il vero `package.json`/`requirements.txt` del repo, confronta ogni dipendenza con l'ultima versione reale su npm/PyPI e verifica la versione esatta usata contro il database reale delle vulnerabilità note [OSV.dev](https://osv.dev) — la stessa fonte usata dagli alert reali di GitHub Dependabot.
 7. **🚨 Scan Rischio Supply-Chain (npm, stile Socket.dev)**: per ogni dipendenza npm legge il vero packument della versione esatta in uso e segnala script di lifecycle (`preinstall`/`install`/`postinstall`) reali, più sospetti typosquat confermati da un vero rapporto ≥1000x nei download mensili reali (API npm), non solo dalla somiglianza del nome.
 8. **🧭 Ricerca Repository Simili**: trova progetti correlati tramite le vere API di ricerca GitHub, basate sui topic e sul linguaggio reali del repo target.
+9. **🔑 Scanner di Secret Reale (stile TruffleHog/gitleaks)**: scarica l'albero file reale e un campione dei contenuti reali del repo, poi testa ogni riga contro firme regex **trascritte dal ruleset pubblico di gitleaks** (chiavi AWS, GitHub PAT classici e fine-grained, blocchi PEM di chiavi private, chiavi API Google/GCP, token/webhook Slack, chiavi segrete Stripe, token npm, JWT, secret Azure, più una regola generica ad alta entropia). Ogni match riporta file+linea reali, mai un finding inventato. Onesto sui limiti: è pattern-matching, non verifica live della credenziale come TruffleHog — l'interfaccia mostra sempre il rischio reale di falsi positivi, confermato in test reale contro `firebase/quickstart-js` (10 match della regola generica, tutti nomi di variabili come `documentById`, zero secret veri) mentre `expressjs/express` è risultato pulito.
+10. **⚖️ Auditor Licenze & Compliance (stile FOSSA/Libraries.io)**: legge la licenza reale dichiarata dal repo target (rilevatore GitHub `license.spdx_id`, file `LICENSE` reale, campo `license` di `package.json`) **e** la licenza reale dichiarata da ogni dipendenza, letta dalle stesse risposte registry npm/PyPI già interrogate dall'Audit Dipendenze — nessuna chiamata aggiuntiva inventata. Classifica ogni licenza come permissiva/copyleft-debole/copyleft/sconosciuta e segnala il concern di compliance reale e ben noto di una dipendenza copyleft in un progetto a licenza permissiva. Verificato su repo reali: `expressjs/express` → MIT, 44/44 dipendenze risolte, tutte permissive, zero flag (corretto); `pa11y/pa11y-dashboard` → rilevato correttamente come GPL-3.0 con una dipendenza reale LGPL-3.0 e una GPL-3.0.
 
 ---
 

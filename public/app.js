@@ -49,6 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSecurityShield();
   setupDependencyAuditor();
   setupSimilarRepoFinder();
+  setupSecretScanner();
+  setupLicenseAuditor();
   setupSQLStudio();
   setupDeepCrawler();
   fetchCatalog();
@@ -432,6 +434,137 @@ function setupSimilarRepoFinder() {
       btn.textContent = "🧭 Trova Repo Simili (GitHub Search reale)";
     } catch {
       btn.textContent = "🧭 Trova Repo Simili (GitHub Search reale)";
+    }
+  });
+}
+
+// 4d. Real Secret Scanner (gitleaks-style regex signatures over real repo files)
+function setupSecretScanner() {
+  const btn = document.getElementById("btn-scan-secrets");
+  const box = document.getElementById("secrets-report-container");
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-secrets-repo").value;
+    btn.textContent = "🔑 Fetching real file contents & scanning...";
+
+    try {
+      const res = await fetch("/api/security/secrets-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: target })
+      });
+      const r = await res.json();
+
+      box.style.display = "block";
+      if (r.error) {
+        box.innerHTML = `<div style="padding: 12px; color: #f87171; font-size: 12px;">${r.error}</div>`;
+      } else {
+        const total = r.matches.length;
+        box.innerHTML = `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+            <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+              Scanned <strong style="color:#e5e7eb;">${r.filesScanned}</strong> of ${r.eligibleTextFiles} eligible text files (${r.totalFilesInTree} files total in repo tree) ·
+              <strong style="color:${total > 0 ? '#f87171' : '#4ade80'};">${total} pattern match${total === 1 ? '' : 'es'}</strong>
+            </div>
+            ${total === 0 ? `<div style="color:#4ade80; font-size:12.5px;">Nessun pattern noto di secret trovato nel campione scansionato.</div>` : `
+            <table style="width:100%; font-size: 11.5px; font-family: var(--font-mono); border-collapse: collapse;">
+              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Regola</th><th>File</th><th>Linea</th><th>Match (redatto)</th></tr></thead>
+              <tbody>
+                ${r.matches.map(m => `
+                  <tr style="border-top: 1px solid var(--border-color);">
+                    <td style="padding: 4px 0; color: ${m.ruleId === 'generic-high-entropy-assignment' ? '#facc15' : '#f87171'};">${m.ruleId}</td>
+                    <td><a href="${m.fileUrl}" target="_blank" style="color:#38bdf8;">${m.filePath}</a></td>
+                    <td>${m.lineNumber}</td>
+                    <td>${m.redactedMatch}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            `}
+            <div style="margin-top: 10px; font-size: 10.5px; color: var(--text-muted);">
+              Firme (${r.signatureSource}). ⚠️ ${r.falsePositiveWarning}
+            </div>
+          </div>
+        `;
+      }
+      btn.textContent = "🔑 Scan File Contents for Secrets";
+    } catch {
+      btn.textContent = "🔑 Scan File Contents for Secrets";
+    }
+  });
+}
+
+// 4e. Real License Detection & Compliance Audit (FOSSA/Libraries.io-style)
+function setupLicenseAuditor() {
+  const btn = document.getElementById("btn-audit-license");
+  const box = document.getElementById("license-report-container");
+
+  const familyColor = (f) => ({
+    permissive: "#4ade80",
+    "weak-copyleft": "#facc15",
+    copyleft: "#f87171",
+    "proprietary-or-none": "#f87171",
+    unknown: "var(--text-muted)"
+  })[f] || "var(--text-muted)";
+
+  btn?.addEventListener("click", async () => {
+    const target = document.getElementById("input-license-repo").value;
+    btn.textContent = "⚖️ Reading LICENSE + registry license fields...";
+
+    try {
+      const res = await fetch("/api/license/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: target })
+      });
+      const r = await res.json();
+
+      box.style.display = "block";
+      if (r.error) {
+        box.innerHTML = `<div style="padding: 12px; color: #f87171; font-size: 12px;">${r.error}</div>`;
+      } else {
+        box.innerHTML = `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 12px;">
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 12px;">
+              <div>
+                <strong style="color:#fff; font-size: 15px;">${r.repoFullName}</strong><br>
+                <span style="font-size: 12px; color: var(--text-muted);">Licenza dichiarata: <strong style="color:#e5e7eb;">${r.repoDeclaredLicenseSpdx || r.repoPackageJsonLicense || "sconosciuta"}</strong></span>
+              </div>
+              <span class="repo-badge-score" style="font-size: 13px; padding: 5px 12px; background: ${familyColor(r.repoLicenseFamily)}22; color: ${familyColor(r.repoLicenseFamily)};">${r.repoLicenseFamily}</span>
+            </div>
+            ${r.repoLicenseFileExcerpt ? `<div style="font-size: 10.5px; color: var(--text-muted); background:#05080e; padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap; max-height:90px; overflow-y:auto;">${r.repoLicenseFileExcerpt.replace(/</g,'&lt;')}</div>` : ""}
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; font-size: 11px; font-family: var(--font-mono); margin-bottom: 14px;">
+              ${Object.entries(r.licenseFamilyBreakdown).filter(([,n]) => n > 0).map(([fam, n]) => `<span style="background:#05080e; padding:6px 10px; border-radius:6px; color:${familyColor(fam)};">${fam}: ${n}</span>`).join("")}
+            </div>
+
+            ${r.complianceFlags.length > 0 ? `
+              <div style="margin-bottom: 14px;">
+                <strong style="color:#f87171; font-size:12px; display:block; margin-bottom:6px;">⚠️ ${r.complianceFlags.length} possibile/i concern di compatibilità licenze:</strong>
+                ${r.complianceFlags.map(f => `<div style="font-size:11.5px; color: var(--text-muted); margin-bottom:6px; padding-left:8px; border-left:2px solid #f87171;">${f.concern}</div>`).join("")}
+              </div>
+            ` : `<div style="font-size:12px; color:#4ade80; margin-bottom:14px;">Nessun concern di compatibilità rilevato tra licenza del repo (${r.repoLicenseFamily}) e le dipendenze.</div>`}
+
+            <table style="width:100%; font-size: 11.5px; font-family: var(--font-mono); border-collapse: collapse;">
+              <thead><tr style="color: var(--text-muted); text-align:left;"><th>Dipendenza</th><th>Versione</th><th>Licenza</th><th>Famiglia</th></tr></thead>
+              <tbody>
+                ${r.dependencyLicenses.slice(0, 30).map(d => `
+                  <tr style="border-top: 1px solid var(--border-color);">
+                    <td style="padding: 4px 0;">${d.name}</td>
+                    <td>${d.currentVersion ?? "?"}</td>
+                    <td>${d.license ?? "sconosciuta"}</td>
+                    <td style="color:${familyColor(d.family)};">${d.family}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            <div style="margin-top: 10px; font-size: 10.5px; color: var(--text-muted);">${r.methodologyNote}</div>
+          </div>
+        `;
+      }
+      btn.textContent = "⚖️ Audit Repo + Dependency Licenses";
+    } catch {
+      btn.textContent = "⚖️ Audit Repo + Dependency Licenses";
     }
   });
 }
