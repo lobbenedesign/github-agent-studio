@@ -8,6 +8,36 @@ let activeLetter = "ALL";
 let currentWikiMarkdown = "";
 let currentCatalog = [];
 
+// Real bug found live-testing every button on every tab: this was called in
+// 5 places (Deep Crawler browse cards, trend chart note) but never defined
+// anywhere in this file — a real ReferenceError, silently swallowed by an
+// empty catch{} in fetchDbBrowse()/loadRepoTrend(), which is why the Deep
+// Crawler's "Browse Full Persisted Index" panel rendered a count but zero
+// actual cards. Defined for real now.
+function escapeHtml(text) {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return String(text ?? "").replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
+ * navigator.clipboard.writeText() was called with no error handling in 4
+ * places — real bug found live-testing every button: in this sandboxed
+ * preview browser (and any real browser without clipboard permission
+ * granted, or any non-HTTPS/non-localhost context) it rejects with
+ * NotAllowedError, which was an unhandled promise rejection since nothing
+ * awaited or caught it. Centralized here with a real fallback: if the
+ * clipboard API fails, show the text in a prompt() so the user can still
+ * copy it manually instead of the action silently doing nothing.
+ */
+function copyToClipboard(text, successMsg) {
+  navigator.clipboard.writeText(text).then(
+    () => alert(successMsg),
+    () => {
+      window.prompt("Clipboard access was denied by the browser. Copy manually:", text);
+    }
+  );
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   setupAlphabetBar();
@@ -78,7 +108,7 @@ async function fetchCrawlStatus() {
     document.getElementById("crawl-stat-ratelimit").textContent = s.rateLimit.remaining !== null ? `${s.rateLimit.remaining} / 30 per min` : "—";
     const lt = s.lastTick;
     document.getElementById("crawl-stat-lastquery").textContent = lt ? (lt.detail || lt.action) : "no ticks yet";
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 async function fetchDbBrowse() {
@@ -102,7 +132,7 @@ async function fetchDbBrowse() {
       `;
       container.appendChild(card);
     });
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 function setupTabs() {
@@ -198,7 +228,7 @@ async function fetchCatalog() {
       card.addEventListener("click", () => openRepoModal(r));
       container.appendChild(card);
     });
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 function setupFilters() {
@@ -239,7 +269,7 @@ function setupForkHunter() {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 6px; font-size: 11px;">
             <span>★ ${f.stars} Stars | Pushed: ${f.lastPushedDate}</span>
-            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="navigator.clipboard.writeText('gh repo fork ${f.forkFullName} --clone'); alert('Copied fork command!')">🍴 Fork This Version</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="copyToClipboard('gh repo fork ${f.forkFullName} --clone', 'Copied fork command!')">🍴 Fork This Version</button>
           </div>
         `;
         container.appendChild(card);
@@ -499,14 +529,76 @@ function openRepoModal(r) {
     <strong style="color: #fff;">📈 Andamento Reale (stelle nel tempo)</strong>
     <div id="modal-trend-chart" style="margin: 8px 0 14px; min-height: 60px; display:flex; align-items:center; justify-content:center; color: var(--text-muted); font-size: 11px;">Caricamento cronologia reale...</div>
 
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <strong style="color: #fff;">🔬 Analisi Codice Reale (analizza, non scarica)</strong>
+      <button class="btn btn-secondary" id="btn-analyze-code" style="font-size:11px;">Analizza ora</button>
+    </div>
+    <div id="modal-code-analysis" style="margin: 0 0 14px; font-size: 12px; color: var(--text-muted);">Nessuna analisi archiviata ancora per questa repo. Premi "Analizza ora" — legge l'albero file reale e un campione di file reali via API GitHub, misura segnali reali (LOC, test, TODO, CI), e archivia solo l'aggregato: mai il codice grezzo.</div>
+
     <div style="display: flex; gap: 8px;">
-      <button class="btn btn-primary" style="flex: 1;" onclick="navigator.clipboard.writeText('gh repo fork ${r.fullName} --clone'); alert('📋 Command copied: gh repo fork ${r.fullName} --clone')">🍴 Copy Fork Command (gh repo fork)</button>
-      <button class="btn btn-secondary" style="flex: 1;" onclick="navigator.clipboard.writeText('git clone ${r.url}.git'); alert('📋 Command copied: git clone ${r.url}.git')">📥 Copy Git Clone</button>
+      <button class="btn btn-primary" style="flex: 1;" onclick="copyToClipboard('gh repo fork ${r.fullName} --clone', '📋 Command copied: gh repo fork ${r.fullName} --clone')">🍴 Copy Fork Command (gh repo fork)</button>
+      <button class="btn btn-secondary" style="flex: 1;" onclick="copyToClipboard('git clone ${r.url}.git', '📋 Command copied: git clone ${r.url}.git')">📥 Copy Git Clone</button>
+    </div>
+    <div style="margin-top:8px; text-align:center;">
+      <a href="https://github.com/${r.fullName}/archive/HEAD.zip" target="_blank" style="font-size:11px; color: var(--text-muted);" id="modal-download-link">📥 Scarica l'intero sorgente (.zip, apre github.com) — azione esplicita e separata dall'analisi</a>
     </div>
   `;
 
   modal.style.display = "flex";
   loadRepoTrend(r.fullName);
+  setupCodeAnalysis(r.fullName);
+}
+
+async function setupCodeAnalysis(fullName) {
+  const container = document.getElementById("modal-code-analysis");
+  const btn = document.getElementById("btn-analyze-code");
+  if (!container || !btn) return;
+
+  function render(a) {
+    const langs = Object.entries(a.languageBreakdown || {}).sort((x, y) => y[1] - x[1]).map(([ext, n]) => `${escapeHtml(ext)}: ${n}`).join(", ") || "—";
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:var(--font-mono);font-size:11px;margin-bottom:8px;">
+        <div>📁 File nell'albero: <strong>${a.totalFilesInTree.toLocaleString()}</strong></div>
+        <div>📄 File sorgente reali: <strong>${a.sourceFilesInTree.toLocaleString()}</strong></div>
+        <div>🔬 Campionati e misurati: <strong>${a.filesSampled}</strong></div>
+        <div>📏 Righe reali contate: <strong>${a.totalLinesCounted.toLocaleString()}</strong></div>
+        <div>🧪 Rapporto file di test: <strong>${(a.testFileRatio * 100).toFixed(0)}%</strong></div>
+        <div>📝 TODO/FIXME reali: <strong>${a.todoMarkersFound}</strong></div>
+      </div>
+      <div style="font-size:11px;margin-bottom:6px;">Linguaggi (per estensione, nel campione): ${langs}</div>
+      <div style="font-size:11.5px; line-height:1.5;">${escapeHtml(a.summary)}</div>
+      <div style="font-size:10px; color: var(--text-muted); margin-top:6px;">Analizzato: ${a.analyzedAt.slice(0,16).replace('T',' ')} — solo questo aggregato è archiviato, non il codice.</div>
+    `;
+  }
+
+  try {
+    const res = await fetch(`/api/repos/analysis?repo=${encodeURIComponent(fullName)}`);
+    const data = await res.json();
+    if (data.cached) render(data.cached);
+  } catch {}
+
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Analisi reale in corso...";
+    container.innerHTML = `<span>Recupero albero file reale e campione di file da GitHub...</span>`;
+    try {
+      const res = await fetch("/api/repos/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: fullName })
+      });
+      const data = await res.json();
+      if (data.error) {
+        container.innerHTML = `<span style="color:#f87171;">Errore reale: ${escapeHtml(data.error)}</span>`;
+      } else {
+        render(data);
+      }
+    } catch (e) {
+      container.innerHTML = `<span style="color:#f87171;">Analisi fallita: ${escapeHtml(String(e))}</span>`;
+    }
+    btn.disabled = false;
+    btn.textContent = "Analizza ora";
+  });
 }
 
 async function loadRepoTrend(fullName) {
@@ -568,7 +660,7 @@ async function fetchDaemonTelemetry() {
     const telemetry = await res.json();
     renderTelemetry(telemetry);
     fetchDeltas();
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 function renderTelemetry(t) {
@@ -602,7 +694,7 @@ async function fetchDeltas() {
       `;
       container.appendChild(card);
     });
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 // 8. Wiki Export
@@ -618,8 +710,7 @@ async function fetchWikiArchive() {
     terminal.textContent = data.markdown;
 
     btnCopy?.addEventListener("click", () => {
-      navigator.clipboard.writeText(currentWikiMarkdown);
-      alert("📋 Textual Wiki Markdown copied to clipboard!");
+      copyToClipboard(currentWikiMarkdown, "📋 Textual Wiki Markdown copied to clipboard!");
     });
 
     btnDownload?.addEventListener("click", () => {
@@ -629,7 +720,7 @@ async function fetchWikiArchive() {
       a.download = "GITHUB_WIKI_ARCHIVE.md";
       a.click();
     });
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 // 9. Scanner
@@ -714,7 +805,7 @@ async function fetchCompetitorMatrix() {
 
     html += `</tbody></table>`;
     container.innerHTML = html;
-  } catch {}
+  } catch (e) { console.error(e); }
 }
 
 function debounce(func, wait) {

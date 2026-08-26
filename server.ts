@@ -16,6 +16,7 @@ import { SimilarRepoFinder } from "./src/similar_repo_finder";
 import { RepoDatabase } from "./src/repo_database";
 import { DeepCrawler } from "./src/deep_crawler";
 import { GitHubApiClient } from "./src/github_api_client";
+import { CodeAnalyzer } from "./src/code_analyzer";
 import { CodeEvaluator } from "./src/code_evaluator";
 import { detectCategory } from "./src/category_detector";
 import { join } from "path";
@@ -61,6 +62,7 @@ const deepCrawler = new DeepCrawler(repoDb);
   if (total > 0) console.log(`📐 Rescored ${total} repos with the current scoring formula.`);
 })();
 const apiClientForVersions = new GitHubApiClient();
+const codeAnalyzer = new CodeAnalyzer();
 
 console.log(`\n======================================================`);
 console.log(`🐙 GITHUB-AGENT STUDIO running on http://localhost:${PORT}`);
@@ -371,6 +373,34 @@ const server = Bun.serve({
           ? "Fewer than 2 real data points yet — the crawler records a new snapshot only when it re-observes this repo with a changed star/fork/issue count. Check back after the crawler completes another full pass."
           : null
       }), { headers });
+    }
+
+    // 7e. Real source-code analysis — "analyze, don't download." Fetches the
+    // real file tree + a real sample of file contents on demand, computes
+    // real aggregate signals (LOC, test ratio, TODOs, CI presence), and
+    // archives ONLY that aggregate + a summary — never the raw code itself.
+    // POST because it does real work (multiple GitHub requests); results
+    // are cached in repos.db and served by the GET route below without
+    // re-analyzing every time.
+    if (url.pathname === "/api/repos/analyze" && req.method === "POST") {
+      try {
+        let body: any = {};
+        try { body = await req.json(); } catch {}
+        const repo = body.repo || "";
+        const result = await codeAnalyzer.analyzeRepo(repo);
+        repoDb.saveCodeAnalysis(result.repoFullName, result);
+        return new Response(JSON.stringify(result), { headers });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: e.status || 500, headers });
+      }
+    }
+
+    // Cached analysis, if one was already run — no GitHub requests, no
+    // re-analysis, just reading back the aggregate previously archived.
+    if (url.pathname === "/api/repos/analysis" && req.method === "GET") {
+      const repo = url.searchParams.get("repo") || "";
+      const cached = repoDb.getCodeAnalysis(repo);
+      return new Response(JSON.stringify({ repo, cached }), { headers });
     }
 
     return new Response("Not Found", { status: 404, headers });

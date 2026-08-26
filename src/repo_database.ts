@@ -167,6 +167,16 @@ export class RepoDatabase {
       );
     `);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_repo ON repo_snapshots(full_name, captured_at);`);
+
+    // Stores only the AGGREGATE result of a code analysis (counts, ratios,
+    // a generated summary) — never raw file contents. See code_analyzer.ts.
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS code_analysis (
+        full_name TEXT PRIMARY KEY,
+        analysis_json TEXT NOT NULL,
+        analyzed_at TEXT NOT NULL
+      );
+    `);
   }
 
   public upsertRepo(r: Omit<StoredRepo, "firstIndexedAt" | "lastCrawledAt">): "inserted" | "updated" {
@@ -238,6 +248,20 @@ export class RepoDatabase {
       .query("SELECT stars, forks, open_issues as openIssues, captured_at as capturedAt FROM repo_snapshots WHERE full_name = ? ORDER BY captured_at ASC LIMIT ?")
       .all(fullName, limit) as any[];
     return rows;
+  }
+
+  /** Persists only the aggregate analysis result (see code_analyzer.ts) — never raw file contents. */
+  public saveCodeAnalysis(fullName: string, analysis: unknown): void {
+    this.db.run(
+      `INSERT INTO code_analysis (full_name, analysis_json, analyzed_at) VALUES ($fullName, $json, $now)
+       ON CONFLICT(full_name) DO UPDATE SET analysis_json=excluded.analysis_json, analyzed_at=excluded.analyzed_at`,
+      { $fullName: fullName, $json: JSON.stringify(analysis), $now: new Date().toISOString() }
+    );
+  }
+
+  public getCodeAnalysis(fullName: string): unknown | null {
+    const row = this.db.query("SELECT analysis_json FROM code_analysis WHERE full_name = ?").get(fullName) as { analysis_json: string } | null;
+    return row ? JSON.parse(row.analysis_json) : null;
   }
 
   /**
