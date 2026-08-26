@@ -365,7 +365,7 @@ function setupDependencyAuditor() {
                     <td style="padding: 4px 0;">${d.name}</td>
                     <td>${d.currentVersion ?? "?"}</td>
                     <td>${d.latestVersion ?? "?"}</td>
-                    <td style="color: ${d.status === 'up-to-date' ? '#4ade80' : d.status === 'major-behind' ? '#f87171' : d.status === 'unknown' ? 'var(--text-muted)' : '#facc15'};">${d.status}</td>
+                    <td style="color: ${(d.status === 'up-to-date' || d.status === 'ahead-of-latest-tag') ? '#4ade80' : d.status === 'major-behind' ? '#f87171' : d.status === 'unknown' ? 'var(--text-muted)' : '#facc15'};" title="${d.status === 'ahead-of-latest-tag' ? 'Pinned version is newer than the registry latest dist-tag (e.g. published under a next/beta tag)' : ''}">${d.status}</td>
                     <td style="color: ${(d.vulnerabilities && d.vulnerabilities.length > 0) ? '#ef4444' : 'var(--text-muted)'};">
                       ${d.vulnerabilities === null
                         ? '—'

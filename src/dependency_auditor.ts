@@ -21,7 +21,7 @@ export interface DependencyAuditEntry {
   manifestRange: string;
   currentVersion: string | null;
   latestVersion: string | null;
-  status: "up-to-date" | "patch-behind" | "minor-behind" | "major-behind" | "unknown";
+  status: "up-to-date" | "patch-behind" | "minor-behind" | "major-behind" | "ahead-of-latest-tag" | "unknown";
   registryUrl: string;
   /** Real known vulnerabilities affecting `currentVersion`, from OSV.dev. `null` means
    *  "not scanned" (e.g. no resolvable current version) — never means "confirmed safe". */
@@ -64,6 +64,17 @@ function computeStatus(current: SemVer | null, latest: SemVer | null): Dependenc
   if (current[0] < latest[0]) return "major-behind";
   if (current[0] === latest[0] && current[1] < latest[1]) return "minor-behind";
   if (current[0] === latest[0] && current[1] === latest[1] && current[2] < latest[2]) return "patch-behind";
+  // Real edge case found live-testing against expressjs/express: npm's
+  // `latest` dist-tag is not always the highest published version — e.g.
+  // `accepts` has 2.0.0 published under the `next` tag while `latest` still
+  // points to 1.3.8. A pinned version genuinely ahead of the registry's
+  // `latest` tag isn't wrong to call "not behind", but labeling it
+  // identically to "matches latest" would misrepresent what was actually
+  // compared. Verified real: `curl registry.npmjs.org/accepts` shows
+  // dist-tags {latest: "1.3.8", next: "2.0.0"}.
+  if (current[0] > latest[0] || (current[0] === latest[0] && current[1] > latest[1]) || (current[0] === latest[0] && current[1] === latest[1] && current[2] > latest[2])) {
+    return "ahead-of-latest-tag";
+  }
   return "up-to-date";
 }
 
@@ -226,7 +237,8 @@ export class DependencyAuditor {
       "minor-behind": 1,
       "patch-behind": 2,
       unknown: 3,
-      "up-to-date": 4
+      "up-to-date": 4,
+      "ahead-of-latest-tag": 5
     };
     const riskRank = (d: DependencyAuditEntry): number => {
       if ((d.vulnerabilities?.length || 0) > 0) return 0;
