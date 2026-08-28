@@ -37,7 +37,7 @@
 2. **🛡️ OpenSSF Security & Supply-Chain Shield**:
    * Inspects dependency vulnerability trees, untracked binary artifacts, token leaks, and assigns a **Security Grade (A+ to F)** before you fork or run code.
 3. **🗄️ MergeStat SQL Code Explorer**:
-   * Execute real-time SQL queries over codebases and the catalog (e.g. `SELECT Name, Stars, Score FROM catalog WHERE Score >= 88 ORDER BY starDelta24h DESC`).
+   * Execute real-time SQL queries over the real `repos` table, merging the curated catalog with the deep-crawler's index (e.g. `SELECT name, stars, total_score FROM repos WHERE total_score >= 80 ORDER BY stars DESC`).
 4. **⏰ 24-Hour Autonomous Crawler Daemon**:
    * Runs in the background every 24 hours to track new AI repositories, version increments, and star velocity deltas.
 5. **🔤 Comprehensive A-to-Z Catalog**:
@@ -77,7 +77,7 @@
 
 ### 🛠️ Quick Start
 
-**One click:** double-click `start-macos.command` (macOS) or `start-windows.bat` (Windows) — checks Bun is installed, picks up a `gh` CLI token if present (real 5000/hour GitHub API limit instead of 60/hour), starts the server, and opens your browser automatically. Both verified working in this repo before being committed, not just written and assumed to work.
+**One click:** double-click `start-macos.command` (macOS) or `start-windows.bat` (Windows) — checks Bun is installed, picks up a `gh` CLI token if present (real 5000/hour GitHub API limit instead of 60/hour), starts the server, and opens your browser automatically. The macOS script was actually run and verified on real macOS before being committed (real server boot, real `200` response). The Windows script was written carefully against documented `cmd.exe` syntax but could not be tested on real Windows in this environment — treat it as unverified until someone runs it on an actual Windows machine.
 
 **Manual:**
 ```bash
@@ -87,6 +87,10 @@ bun server.ts
 ```
 
 Open your browser at **`http://localhost:3011`**.
+
+### ✅ Testing
+
+`bun test tests/` runs a real, network-free unit suite (`tests/`) covering the deterministic logic that's actually feasible to unit-test — dependency version-status classification, the Levenshtein-based typosquat detector, the continuous code-scoring formula, the real SQLite-backed SQL query engine, and the persistent repo database (upsert/browse/history/code-analysis round-trips). It runs on every push/PR via GitHub Actions (`.github/workflows/ci.yml`), alongside a real build and a real `tsc --noEmit` type-check. What it does *not* cover: anything that hits a live external API (GitHub, npm, PyPI, OSV.dev) — those are verified manually against real endpoints instead (see `src/verify_*.ts` for standalone live-verification scripts), and the UI itself, which has been manually exercised end-to-end in a real browser (see `CHANGELOG.md` for the specific bugs that live testing found and fixed).
 
 ---
 
@@ -110,7 +114,7 @@ Open your browser at **`http://localhost:3011`**.
 
 ### 🛠️ Avvio Rapido
 
-**Un click:** doppio click su `start-macos.command` (macOS) o `start-windows.bat` (Windows) — verifica che Bun sia installato, usa un token `gh` CLI se presente (limite reale 5000/ora invece di 60/ora), avvia il server e apre il browser automaticamente. Entrambi testati davvero su questa macchina prima del commit.
+**Un click:** doppio click su `start-macos.command` (macOS) o `start-windows.bat` (Windows) — verifica che Bun sia installato, usa un token `gh` CLI se presente (limite reale 5000/ora invece di 60/ora), avvia il server e apre il browser automaticamente. Lo script macOS è stato eseguito e verificato davvero su questa macchina prima del commit (avvio server reale, risposta `200` reale). Lo script Windows è stato scritto con cura seguendo la sintassi documentata di `cmd.exe`, ma non ha potuto essere testato su una vera macchina Windows in questo ambiente — consideralo non verificato finché qualcuno non lo esegue su Windows reale.
 
 **Manuale:**
 ```bash
@@ -120,6 +124,10 @@ bun server.ts
 ```
 
 Apri il browser all'indirizzo **`http://localhost:3011`**.
+
+### ✅ Test
+
+`bun test tests/` esegue una suite di unit test reale e senza rete (`tests/`) sulla logica deterministica effettivamente testabile in isolamento — classificazione dello stato versione delle dipendenze, il rilevatore di typosquat basato su Levenshtein, la formula di scoring continua del codice, il motore SQL reale basato su SQLite e il database persistente dei repo (upsert/browse/history/analisi codice). Viene eseguita ad ogni push/PR via GitHub Actions (`.github/workflows/ci.yml`), insieme a una build reale e un type-check reale con `tsc --noEmit`. Cosa non copre: tutto ciò che chiama un'API esterna reale (GitHub, npm, PyPI, OSV.dev) — verificato manualmente contro endpoint reali (vedi `src/verify_*.ts` per script di verifica live standalone), e l'interfaccia stessa, testata manualmente end-to-end in un browser reale (vedi `CHANGELOG.md` per i bug reali trovati e corretti tramite test live).
 
 ---
 

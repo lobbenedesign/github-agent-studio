@@ -52,18 +52,18 @@ export interface DependencyAuditReport {
 
 type SemVer = [number, number, number];
 
-function stripRangePrefix(raw: string): string {
+export function stripRangePrefix(raw: string): string {
   return raw.trim().replace(/^[\^~>=<\s]+/, "").split(/[ ,]/)[0];
 }
 
-function parseSemver(v: string | null | undefined): SemVer | null {
+export function parseSemver(v: string | null | undefined): SemVer | null {
   if (!v) return null;
   const m = v.match(/(\d+)\.(\d+)\.(\d+)/);
   if (!m) return null;
   return [Number(m[1]), Number(m[2]), Number(m[3])];
 }
 
-function computeStatus(current: SemVer | null, latest: SemVer | null): DependencyAuditEntry["status"] {
+export function computeStatus(current: SemVer | null, latest: SemVer | null): DependencyAuditEntry["status"] {
   if (!current || !latest) return "unknown";
   if (current[0] < latest[0]) return "major-behind";
   if (current[0] === latest[0] && current[1] < latest[1]) return "minor-behind";

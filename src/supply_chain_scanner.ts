@@ -108,7 +108,7 @@ export interface SupplyChainRisk {
 }
 
 /** Real Levenshtein edit distance between two strings. */
-function levenshtein(a: string, b: string): number {
+export function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
   if (m === 0) return n;
@@ -174,7 +174,7 @@ async function fetchMonthlyDownloads(name: string): Promise<number | null> {
  * match) for a given package name. Returns null if nothing in the corpus is
  * within distance 2.
  */
-function findClosestPopularName(name: string): { candidate: string; distance: number } | null {
+export function findClosestPopularName(name: string): { candidate: string; distance: number } | null {
   let best: { candidate: string; distance: number } | null = null;
   for (const popular of POPULAR_PACKAGE_CORPUS) {
     if (popular === name) return null; // exact match to a popular package = not a typosquat

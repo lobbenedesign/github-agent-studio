@@ -22,3 +22,6 @@ jobs:
 
       - name: Type-check
         run: bun run typecheck
+
+      - name: Unit tests (real, network-free, deterministic logic)
+        run: bun run test
