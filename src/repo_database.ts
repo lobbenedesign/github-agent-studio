@@ -15,8 +15,23 @@
  */
 
 import { Database } from "bun:sqlite";
+import type { SQLQueryBindings, Changes } from "bun:sqlite";
 import { join } from "path";
 import { mkdirSync, existsSync } from "fs";
+
+// bun-types' Database.run<P extends SQLQueryBindings[]>(sql, ...bindings: P[])
+// requires each binding to itself be an array, so it rejects the single
+// named-bindings object form ({ $name: ... }) even though that's the
+// documented, correct bun:sqlite runtime API — verified directly:
+// `new Database(":memory:").run("INSERT INTO t VALUES ($a)", { $a: 1 })`
+// works. This is a gap in the upstream .d.ts, not a real type error; cast
+// once at this boundary instead of `as any`-ing every call site below.
+function runNamed(db: Database, sql: string, bindings: Record<string, SQLQueryBindings>): Changes {
+  return (db.run as unknown as (sql: string, bindings: Record<string, SQLQueryBindings>) => Changes)(
+    sql,
+    bindings
+  );
+}
 
 export interface StoredRepo {
   fullName: string;
@@ -182,7 +197,8 @@ export class RepoDatabase {
   public upsertRepo(r: Omit<StoredRepo, "firstIndexedAt" | "lastCrawledAt">): "inserted" | "updated" {
     const now = new Date().toISOString();
     const existing = this.db.query("SELECT full_name FROM repos WHERE full_name = ?").get(r.fullName);
-    this.db.run(
+    runNamed(
+      this.db,
       `INSERT INTO repos (full_name, name, owner, url, description, language, license, stars, forks, open_issues, topics, created_at, pushed_at, default_branch, archived, first_indexed_at, last_crawled_at, category, total_score, recommendation, architecture_score, code_cleanliness_score, community_momentum_score, self_hostability_score)
        VALUES ($fullName, $name, $owner, $url, $description, $language, $license, $stars, $forks, $openIssues, $topics, $createdAt, $pushedAt, $defaultBranch, $archived, $firstIndexedAt, $lastCrawledAt, $category, $totalScore, $recommendation, $architectureScore, $codeCleanlinessScore, $communityMomentumScore, $selfHostabilityScore)
        ON CONFLICT(full_name) DO UPDATE SET
@@ -237,7 +253,8 @@ export class RepoDatabase {
       .query("SELECT stars, forks, open_issues as openIssues FROM repo_snapshots WHERE full_name = ? ORDER BY captured_at DESC LIMIT 1")
       .get(fullName) as { stars: number; forks: number; openIssues: number } | null;
     if (last && last.stars === stars && last.forks === forks && last.openIssues === openIssues) return;
-    this.db.run(
+    runNamed(
+      this.db,
       `INSERT INTO repo_snapshots (full_name, stars, forks, open_issues, captured_at) VALUES ($fullName, $stars, $forks, $openIssues, $capturedAt)`,
       { $fullName: fullName, $stars: stars, $forks: forks, $openIssues: openIssues, $capturedAt: now }
     );
@@ -252,7 +269,8 @@ export class RepoDatabase {
 
   /** Persists only the aggregate analysis result (see code_analyzer.ts) — never raw file contents. */
   public saveCodeAnalysis(fullName: string, analysis: unknown): void {
-    this.db.run(
+    runNamed(
+      this.db,
       `INSERT INTO code_analysis (full_name, analysis_json, analyzed_at) VALUES ($fullName, $json, $now)
        ON CONFLICT(full_name) DO UPDATE SET analysis_json=excluded.analysis_json, analyzed_at=excluded.analyzed_at`,
       { $fullName: fullName, $json: JSON.stringify(analysis), $now: new Date().toISOString() }
@@ -291,7 +309,8 @@ export class RepoDatabase {
   }
 
   public backfillScore(fullName: string, category: string | null, score: { totalScore: number; recommendation: string; architectureScore: number; codeCleanlinessScore: number; communityMomentumScore: number; selfHostabilityScore: number }): void {
-    this.db.run(
+    runNamed(
+      this.db,
       `UPDATE repos SET category=$category, total_score=$totalScore, recommendation=$recommendation, architecture_score=$architectureScore, code_cleanliness_score=$codeCleanlinessScore, community_momentum_score=$communityMomentumScore, self_hostability_score=$selfHostabilityScore WHERE full_name=$fullName`,
       {
         $fullName: fullName,
@@ -405,7 +424,8 @@ export class RepoDatabase {
       .query("SELECT id FROM crawl_partitions WHERE language = $l AND min_stars = $mn AND (max_stars IS $mx OR max_stars = $mx)")
       .get({ $l: language, $mn: minStars, $mx: maxStars });
     if (existing) return;
-    this.db.run(
+    runNamed(
+      this.db,
       `INSERT INTO crawl_partitions (language, min_stars, max_stars) VALUES ($l, $mn, $mx)`,
       { $l: language, $mn: minStars, $mx: maxStars }
     );
@@ -418,7 +438,8 @@ export class RepoDatabase {
   }
 
   public updatePartitionProgress(id: number, nextPage: number, totalCount: number, ingestedDelta: number, exhausted: boolean, needsSplit: boolean): void {
-    this.db.run(
+    runNamed(
+      this.db,
       `UPDATE crawl_partitions SET next_page = $p, total_count = $t, repos_ingested = repos_ingested + $ing, exhausted = $ex, needs_split = $sp, last_crawled_at = $now WHERE id = $id`,
       { $p: nextPage, $t: totalCount, $ing: ingestedDelta, $ex: exhausted ? 1 : 0, $sp: needsSplit ? 1 : 0, $now: new Date().toISOString(), $id: id }
     );
@@ -427,7 +448,7 @@ export class RepoDatabase {
   public splitPartition(id: number, language: string, minStars: number, maxStars: number, midpoint: number): void {
     // Replace one too-large partition with two narrower star-range halves,
     // each independently under the ~1000-result search cap (hopefully).
-    this.db.run("DELETE FROM crawl_partitions WHERE id = $id", { $id: id });
+    runNamed(this.db, "DELETE FROM crawl_partitions WHERE id = $id", { $id: id });
     this.seedPartitionIfMissing(language, midpoint + 1, maxStars);
     this.seedPartitionIfMissing(language, minStars, midpoint);
   }

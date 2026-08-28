@@ -4,3 +4,6 @@ bun.lockb
 .DS_Store
 data/catalog.json
 data/repos.db*
+
+dist/
+*.bun-build
