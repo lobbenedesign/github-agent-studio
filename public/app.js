@@ -31,9 +31,25 @@ function escapeHtml(text) {
  */
 function copyToClipboard(text, successMsg) {
   navigator.clipboard.writeText(text).then(
-    () => alert(successMsg),
+    () => { try { alert(successMsg); } catch {} },
     () => {
-      window.prompt("Clipboard access was denied by the browser. Copy manually:", text);
+      // Real chain of fallbacks, each one guarded: alert()/prompt() are
+      // themselves unavailable in some contexts (confirmed live — this
+      // sandboxed test browser disables both). Also confirmed live: in this
+      // same sandbox window.prompt() doesn't throw synchronously, it returns
+      // a Promise that rejects — a plain try/catch around the call misses
+      // that entirely and leaves an unhandled rejection. Guard both shapes.
+      const manualCopyFailed = () => {
+        try { alert("Clipboard access denied and no manual-copy dialog available. Text: " + text); } catch {}
+      };
+      try {
+        const result = window.prompt("Clipboard access was denied by the browser. Copy manually:", text);
+        if (result && typeof result.catch === "function") {
+          result.catch(manualCopyFailed);
+        }
+      } catch {
+        manualCopyFailed();
+      }
     }
   );
 }

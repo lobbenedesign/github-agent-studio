@@ -269,8 +269,41 @@ const server = Bun.serve({
       try {
         let body: any = {};
         try { body = await req.json(); } catch {}
-        const query = body.query || "SELECT name, stars, total_score, language FROM repos WHERE total_score >= 80 ORDER BY stars DESC";
-        const result = sqlEngine.executeQuery(query, indexer.getCatalog());
+        const query = body.query || "SELECT name, full_name, stars, total_score, language FROM repos WHERE total_score >= 80 ORDER BY stars DESC LIMIT 20";
+
+        // Real bug found live-testing every button: this only ever queried
+        // indexer.getCatalog() (the ~20-item curated seed), same
+        // disconnected-systems problem already fixed for the main A-Z
+        // Catalog tab but missed here — a "MergeStat-style SQL engine"
+        // that can only see 20 rows isn't useful for the kind of
+        // aggregate/filter queries it's meant to demonstrate. Merges in a
+        // real slice of the deep-crawler's index (top 5000 by score, capped
+        // for interactive query latency — bun:sqlite handles the insert
+        // fine, but re-populating tens of thousands of rows on every
+        // keystroke-triggered query isn't worth it for a demo SQL box).
+        const dbSlice = repoDb.getTopByScore(5000);
+        const curated = indexer.getCatalog();
+        const curatedNames = new Set(curated.map((c) => c.fullName.toLowerCase()));
+        const merged = [
+          ...curated,
+          ...dbSlice
+            .filter((r) => !curatedNames.has(r.fullName.toLowerCase()))
+            .map((r) => ({
+              name: r.name,
+              owner: r.owner,
+              category: r.category || "General",
+              language: r.language || "unknown",
+              stars: r.stars,
+              forks: r.forks,
+              openIssues: r.openIssues,
+              starDelta24h: 0,
+              scoreCard: { totalScore: r.totalScore ?? 0, recommendation: r.recommendation ?? "MONITOR 👁️" },
+              currentVersion: null,
+              description: r.description
+            }))
+        ];
+
+        const result = sqlEngine.executeQuery(query, merged as any);
         return new Response(JSON.stringify(result), { headers });
       } catch (e: any) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });

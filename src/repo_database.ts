@@ -325,6 +325,21 @@ export class RepoDatabase {
     );
   }
 
+  /**
+   * Real bug found live-testing SQL Studio: it merged `browse()`'s results
+   * into the SQL engine expecting up to 5000 rows, but `browse()` hard-caps
+   * at 200 (a reasonable safety limit for the public-facing UI browse
+   * endpoint, so a client can't accidentally request a huge JSON payload).
+   * SQL Studio needs its own higher-capacity path since it's a server-side
+   * merge, not a browser response — this bypasses that UI-facing cap.
+   */
+  public getTopByScore(limit: number): StoredRepo[] {
+    const rows = this.db
+      .query("SELECT * FROM repos ORDER BY total_score DESC LIMIT ?")
+      .all(Math.min(10000, Math.max(1, limit))) as any[];
+    return rows.map(this.rowToRepo);
+  }
+
   public count(): number {
     const row = this.db.query("SELECT COUNT(*) as c FROM repos").get() as { c: number };
     return row.c;
