@@ -186,3 +186,18 @@ User request: "implementa tutto quello che manca e che ti sembra necessario" (im
 **Fixed a real README honesty bug found while documenting the above:** both the English and Italian Quick Start sections claimed "Both [launchers] verified working ... before being committed" — but `start-windows.bat` was never run on real Windows (this was already honestly disclosed inside `CHANGELOG.md` itself from an earlier round, just not reflected in the README's own claim). Corrected both language sections to state precisely what was and wasn't verified. Also found and fixed a second, smaller instance of the same stale-example-query bug fixed in `public/index.html` two rounds ago — the English feature list's SQL Studio bullet still showed the old broken `SELECT Name, Stars, Score FROM catalog ...` example referencing a nonexistent table.
 
 **Confirmed already real, no action needed:** `.github/workflows/ci.yml` (build + typecheck) already existed from a parallel session's work; `supply_chain_scanner.ts` and `license_auditor.ts` were already fully wired into `dependency_auditor.ts`/`server.ts`, not dangling as initially suspected — only the three `verify_*.ts` scripts remain standalone (by design: they hit live external APIs and are meant to be run manually, not as part of the deterministic CI suite).
+
+## 2026-08-29 — Deep Crawler auto-resumes after a crash/reboot/redeploy, verified live end-to-end
+
+Found while answering a follow-up "cosa manca ancora" (what's still missing) after the test-suite round: `DeepCrawler.start()` was only ever called from the `/api/crawl/start` UI button, never at server boot. A crash, machine reboot, or redeploy silently left the "continuously-growing index" paused until a human noticed and clicked Start again — it never lied about its state (`/api/crawl/status` correctly reported `running: false`), but the marketed "continuously growing" behavior quietly stopped growing.
+
+**Fixed:**
+- `src/repo_database.ts`: added a small generic `settings` key-value table (`getSetting`/`setSetting`) — the natural place for process-restart-durable flags that don't need their own table.
+- `src/deep_crawler.ts`: `start()`/`stop()` now persist a `deep_crawler_running` flag; new `wasRunningBeforeShutdown()` reads it back.
+- `server.ts`: at boot, calls `deepCrawler.start()` automatically **only if** the flag says it was genuinely running last time — an explicit Stop click persists `"0"` and correctly stays paused across a restart, it doesn't just resume unconditionally.
+
+**Verified live, twice, against the real production `data/repos.db` (not a mock, not just the unit tests):**
+1. Started the crawler via the real API, then `kill -9`'d the server process (simulating an actual crash, not a graceful shutdown) — on restart, the log printed `Deep Crawler auto-resumed: was running when the process last stopped.` and `/api/crawl/status` showed `running: true` with a real fresh tick already executed (`Objective-C stars:10..99` page 8, 100 real results).
+2. Explicitly stopped the crawler via the real API, then killed and restarted the server again — this time no auto-resume log line appeared and `/api/crawl/status` correctly showed `running: false`, confirming a human's explicit Stop is respected across a restart rather than being silently overridden.
+
+Also added `tests/deep_crawler.test.ts` (3 tests) and a settings round-trip test in `tests/repo_database.test.ts`, both network-free — full suite now 37 tests across 6 files, still green in CI.

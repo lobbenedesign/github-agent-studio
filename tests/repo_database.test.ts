@@ -100,4 +100,16 @@ describe("RepoDatabase", () => {
     db.saveCodeAnalysis("acme/sample", analysis);
     expect(db.getCodeAnalysis("acme/sample")).toEqual(analysis);
   });
+
+  test("getSetting/setSetting round-trip and survive a fresh RepoDatabase instance against the same file (simulates a process restart)", () => {
+    expect(db.getSetting("deep_crawler_running")).toBeNull();
+    db.setSetting("deep_crawler_running", "1");
+    expect(db.getSetting("deep_crawler_running")).toBe("1");
+    db.setSetting("deep_crawler_running", "0");
+    expect(db.getSetting("deep_crawler_running")).toBe("0");
+
+    const dbPath = join(dir, "test.db");
+    const reopened = new RepoDatabase(dbPath);
+    expect(reopened.getSetting("deep_crawler_running")).toBe("0");
+  });
 });

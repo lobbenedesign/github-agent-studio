@@ -13,7 +13,7 @@ import { SQLQueryEngine } from "./src/sql_query_engine";
 import { GitHubInsightBenchmark } from "./src/competitor_benchmark";
 import { DependencyAuditor } from "./src/dependency_auditor";
 import { SimilarRepoFinder } from "./src/similar_repo_finder";
-import { RepoDatabase } from "./src/repo_database";
+import { RepoDatabase, StoredRepo } from "./src/repo_database";
 import { DeepCrawler } from "./src/deep_crawler";
 import { GitHubApiClient } from "./src/github_api_client";
 import { CodeAnalyzer } from "./src/code_analyzer";
@@ -37,6 +37,17 @@ const depAuditor = new DependencyAuditor();
 const similarFinder = new SimilarRepoFinder();
 const repoDb = new RepoDatabase();
 const deepCrawler = new DeepCrawler(repoDb);
+
+// Real bug found live-testing: the deep crawler only ever started via the
+// UI's Start button — a crash, reboot, or redeploy silently paused the
+// "continuously growing index" until a human noticed and clicked Start
+// again. Resume automatically here ONLY if it was genuinely running when
+// the process last stopped (persisted in the `settings` table) — not if
+// a human explicitly clicked Stop, which persists "0" and stays paused.
+if (deepCrawler.wasRunningBeforeShutdown()) {
+  deepCrawler.start();
+  console.log("Deep Crawler auto-resumed: was running when the process last stopped.");
+}
 
 // Real full rescore at boot: recomputes every row's score from its stored
 // real signals (stars/forks/issues/pushedAt) using the CURRENT formula in
@@ -77,6 +88,43 @@ console.log(`🗄️ MergeStat-Style SQL Query Engine: Active`);
 console.log(`⏰ Daily 24-Hour Automated Crawler Daemon: Running`);
 console.log(`📖 Clean Textual Wiki Archive Generator: Online`);
 console.log(`======================================================\n`);
+
+/**
+ * Shared with /api/repos/list's merge logic and the new /api/repos/compare
+ * below — extracted so both build the exact same shape from a repos.db row
+ * instead of two copies drifting apart.
+ */
+function storedRepoToItem(r: StoredRepo) {
+  return {
+    id: r.fullName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+    name: r.name,
+    fullName: r.fullName,
+    url: r.url,
+    owner: r.owner,
+    stars: r.stars,
+    forks: r.forks,
+    openIssues: r.openIssues,
+    language: r.language || "unknown",
+    license: r.license || "none",
+    category: r.category,
+    description: r.description,
+    scoreCard: {
+      totalScore: r.totalScore ?? 0,
+      recommendation: r.recommendation ?? "MONITOR 👁️",
+      architectureScore: r.architectureScore ?? 0,
+      codeCleanlinessScore: r.codeCleanlinessScore ?? 0,
+      communityMomentumScore: r.communityMomentumScore ?? 0,
+      selfHostabilityScore: r.selfHostabilityScore ?? 0,
+      italianSummary: { whatItDoes: r.description || "", howItWorks: "", strategicVerdict: r.recommendation ?? "" },
+      strategicRationale: r.recommendation ?? "",
+      suggestedEnhancementRoadmap: []
+    },
+    currentVersion: null,
+    starDelta24h: 0,
+    hasRecentUpdate: false,
+    updatedAt: (r.pushedAt || r.firstIndexedAt).slice(0, 10)
+  };
+}
 
 const server = Bun.serve({
   port: PORT,
@@ -160,35 +208,7 @@ const server = Bun.serve({
       const curatedNames = new Set(curated.map((c) => c.fullName.toLowerCase()));
       const fromDb = dbResult.rows
         .filter((r) => !curatedNames.has(r.fullName.toLowerCase()))
-        .map((r) => ({
-          id: r.fullName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-          name: r.name,
-          fullName: r.fullName,
-          url: r.url,
-          owner: r.owner,
-          stars: r.stars,
-          forks: r.forks,
-          openIssues: r.openIssues,
-          language: r.language || "unknown",
-          license: r.license || "none",
-          category: r.category,
-          description: r.description,
-          scoreCard: {
-            totalScore: r.totalScore ?? 0,
-            recommendation: r.recommendation ?? "MONITOR 👁️",
-            architectureScore: r.architectureScore ?? 0,
-            codeCleanlinessScore: r.codeCleanlinessScore ?? 0,
-            communityMomentumScore: r.communityMomentumScore ?? 0,
-            selfHostabilityScore: r.selfHostabilityScore ?? 0,
-            italianSummary: { whatItDoes: r.description || "", howItWorks: "", strategicVerdict: r.recommendation ?? "" },
-            strategicRationale: r.recommendation ?? "",
-            suggestedEnhancementRoadmap: []
-          },
-          currentVersion: null,
-          starDelta24h: 0,
-          hasRecentUpdate: false,
-          updatedAt: (r.pushedAt || r.firstIndexedAt).slice(0, 10)
-        }));
+        .map((r) => storedRepoToItem(r));
 
       const merged = [...curated, ...fromDb];
       const cmp: Record<string, (a: any, b: any) => number> = {
@@ -438,6 +458,42 @@ const server = Bun.serve({
       const repo = url.searchParams.get("repo") || "";
       const cached = repoDb.getCodeAnalysis(repo);
       return new Response(JSON.stringify({ repo, cached }), { headers });
+    }
+
+    // Side-by-side comparison — pure composition of data already computed
+    // elsewhere (score breakdown, real star/fork history, cached code
+    // analysis if one exists). No new signal is computed here; this is
+    // exactly why storedRepoToItem() was extracted above, so this endpoint
+    // and /api/repos/list build the identical shape from the same source
+    // instead of two mappings drifting apart. No network calls — real
+    // GitHub requests only ever happen via /api/repos/analyze, on demand,
+    // triggered by the user, same as everywhere else in this app.
+    if (url.pathname === "/api/repos/compare" && req.method === "GET") {
+      const raw = url.searchParams.get("repos") || "";
+      const fullNames = raw.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);
+      if (fullNames.length < 2) {
+        return new Response(JSON.stringify({ error: "Provide at least 2 repos, comma-separated, e.g. ?repos=owner1/repo1,owner2/repo2" }), { status: 400, headers });
+      }
+
+      const curated = indexer.getCatalog();
+      const results = fullNames.map((fullName) => {
+        const fromCurated = curated.find((c) => c.fullName.toLowerCase() === fullName.toLowerCase());
+        const item = fromCurated || (() => {
+          const stored = repoDb.getByFullName(fullName);
+          return stored ? storedRepoToItem(stored) : null;
+        })();
+        if (!item) return { fullName, found: false };
+
+        return {
+          fullName: item.fullName,
+          found: true,
+          repo: item,
+          history: repoDb.getHistory(item.fullName),
+          codeAnalysis: repoDb.getCodeAnalysis(item.fullName)
+        };
+      });
+
+      return new Response(JSON.stringify({ results }), { headers });
     }
 
     // 10. Real secret scanning (gitleaks-style regex signatures over real repo

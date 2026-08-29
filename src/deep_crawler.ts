@@ -26,6 +26,7 @@ import { RepoDatabase } from "./repo_database";
 import { CodeEvaluator } from "./code_evaluator";
 import { detectCategory } from "./category_detector";
 
+const RUNNING_FLAG_KEY = "deep_crawler_running";
 const SEARCH_INTERVAL_MS = 2500; // ~24 req/min, under the real 30/min cap
 const MAX_RESULTS_PER_QUERY = 1000; // GitHub Search API's real hard cap regardless of pagination
 
@@ -88,6 +89,7 @@ export class DeepCrawler {
   }
 
   public start(): void {
+    this.db.setSetting(RUNNING_FLAG_KEY, "1");
     if (this.timer) return;
     this.running = true;
     this.timer = setInterval(() => {
@@ -98,6 +100,7 @@ export class DeepCrawler {
   }
 
   public stop(): void {
+    this.db.setSetting(RUNNING_FLAG_KEY, "0");
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.running = false;
@@ -105,6 +108,19 @@ export class DeepCrawler {
 
   public isRunning(): boolean {
     return this.running;
+  }
+
+  /**
+   * Real bug found live-testing: start() was only ever called from the
+   * `/api/crawl/start` button — never at server boot — so a crash, reboot,
+   * or redeploy silently left the "continuously growing index" paused
+   * until a human noticed and clicked Start again. The running state now
+   * survives in `settings` (see RepoDatabase), so the caller (server.ts)
+   * can resume automatically on boot if it was genuinely running last time
+   * — but NOT if a human explicitly clicked Stop, which persists "0".
+   */
+  public wasRunningBeforeShutdown(): boolean {
+    return this.db.getSetting(RUNNING_FLAG_KEY) === "1";
   }
 
   public getLastTick(): CrawlTickResult | null {

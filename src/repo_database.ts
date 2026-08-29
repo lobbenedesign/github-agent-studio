@@ -192,6 +192,32 @@ export class RepoDatabase {
         analyzed_at TEXT NOT NULL
       );
     `);
+
+    // Generic small key-value store for process-restart-durable flags that
+    // don't warrant their own table — e.g. "was the deep crawler running
+    // when the process last stopped" (see DeepCrawler.start()/stop()),
+    // so a crash/reboot/redeploy can resume it instead of silently leaving
+    // it paused until a human remembers to click Start again.
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+  }
+
+  public getSetting(key: string): string | null {
+    const row = this.db.query("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | null;
+    return row ? row.value : null;
+  }
+
+  public setSetting(key: string, value: string): void {
+    runNamed(
+      this.db,
+      `INSERT INTO settings (key, value) VALUES ($key, $value)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      { $key: key, $value: value }
+    );
   }
 
   public upsertRepo(r: Omit<StoredRepo, "firstIndexedAt" | "lastCrawledAt">): "inserted" | "updated" {
