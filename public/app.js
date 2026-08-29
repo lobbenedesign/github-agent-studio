@@ -225,12 +225,15 @@ async function fetchCatalog() {
       card.className = `repo-card ${isTop ? 'repo-card-highlight' : ''}`;
       card.innerHTML = `
         <div class="repo-header">
-          <div>
-            <div class="repo-title">
-              <a href="${r.url}" target="_blank" onclick="event.stopPropagation()">${r.name}</a>
-              <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); margin-left: 6px;">${r.currentVersion || '—'}</span>
+          <div style="display:flex; align-items:flex-start; gap:6px;">
+            <input type="checkbox" class="compare-checkbox" data-fullname="${escapeHtml(r.fullName)}" title="Seleziona per confronto (max 4)" style="margin-top:3px;" ${compareSelection.has(r.fullName) ? "checked" : ""}>
+            <div>
+              <div class="repo-title">
+                <a href="${r.url}" target="_blank" onclick="event.stopPropagation()">${r.name}</a>
+                <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); margin-left: 6px;">${r.currentVersion || '—'}</span>
+              </div>
+              <div class="repo-author">${r.fullName} • <span style="color: #38bdf8;">${r.category || "General"}</span></div>
             </div>
-            <div class="repo-author">${r.fullName} • <span style="color: #38bdf8;">${r.category || "General"}</span></div>
           </div>
           <span class="repo-badge-score">${r.scoreCard.totalScore}/100</span>
         </div>
@@ -243,10 +246,108 @@ async function fetchCatalog() {
           <span>${r.language}</span>
         </div>
       `;
+      card.querySelector(".compare-checkbox").addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleCompareSelection(r.fullName, e.target);
+      });
       card.addEventListener("click", () => openRepoModal(r));
       container.appendChild(card);
     });
   } catch (e) { console.error(e); }
+}
+
+// Real side-by-side comparison — composes data already computed elsewhere
+// (score breakdown, real history, cached code analysis). No new signals.
+let compareSelection = new Set();
+
+function toggleCompareSelection(fullName, checkboxEl) {
+  if (compareSelection.has(fullName)) {
+    compareSelection.delete(fullName);
+  } else {
+    if (compareSelection.size >= 4) {
+      if (checkboxEl) checkboxEl.checked = false;
+      alert("Massimo 4 repo per confronto.");
+      return;
+    }
+    compareSelection.add(fullName);
+  }
+  updateCompareBar();
+}
+
+function updateCompareBar() {
+  const bar = document.getElementById("compare-bar");
+  if (!bar) return;
+  if (compareSelection.size >= 2) {
+    bar.style.display = "flex";
+    document.getElementById("compare-bar-count").textContent = `${compareSelection.size} repo selezionate`;
+  } else {
+    bar.style.display = "none";
+  }
+}
+
+async function openCompareModal() {
+  const modal = document.getElementById("compare-modal");
+  const body = document.getElementById("compare-modal-body");
+  if (!modal || !body) return;
+  modal.style.display = "flex";
+  body.innerHTML = `<div style="padding:20px;color:var(--text-muted);">Caricamento confronto reale...</div>`;
+
+  try {
+    const res = await fetch(`/api/repos/compare?repos=${Array.from(compareSelection).map(encodeURIComponent).join(",")}`);
+    const data = await res.json();
+    if (data.error) {
+      body.innerHTML = `<div style="padding:20px;color:#f87171;">${escapeHtml(data.error)}</div>`;
+      return;
+    }
+    renderCompareTable(data.results, body);
+  } catch (e) {
+    body.innerHTML = `<div style="padding:20px;color:#f87171;">Confronto fallito: ${escapeHtml(String(e))}</div>`;
+  }
+}
+
+function renderCompareTable(results, body) {
+  const cols = results.map(r => r.found ? r.repo : null);
+  const names = results.map(r => r.fullName);
+
+  function row(label, fn) {
+    return `<tr><td style="padding:6px 10px;color:var(--text-muted);font-size:11px;white-space:nowrap;">${label}</td>${
+      cols.map(c => `<td style="padding:6px 10px;font-size:12px;">${c ? fn(c) : '<span style="color:#f87171;">non trovata</span>'}</td>`).join("")
+    }</tr>`;
+  }
+
+  const maxStars = Math.max(1, ...cols.filter(Boolean).map(c => c.stars));
+  function bar(val, max, color) {
+    const pct = Math.max(2, Math.round((val / max) * 100));
+    return `<div style="background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;width:100px;height:8px;display:inline-block;vertical-align:middle;margin-right:6px;"><div style="background:${color};width:${pct}%;height:100%;"></div></div>`;
+  }
+
+  let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+    <tr>
+      <td></td>
+      ${names.map(n => `<td style="padding:8px 10px;font-weight:700;color:#38bdf8;font-size:12px;">${escapeHtml(n)}</td>`).join("")}
+    </tr>
+    ${row("Punteggio Reale", c => `<strong style="color:${c.scoreCard.totalScore>=88?'#4ade80':c.scoreCard.totalScore>=75?'#fbbf24':'#e5e7eb'};">${c.scoreCard.totalScore}/100</strong>`)}
+    ${row("Verdetto", c => c.scoreCard.recommendation)}
+    ${row("🏛️ Architecture", c => `${c.scoreCard.architectureScore}/30`)}
+    ${row("🧹 Code Cleanliness", c => `${c.scoreCard.codeCleanlinessScore}/25`)}
+    ${row("📈 Momentum", c => `${c.scoreCard.communityMomentumScore}/25`)}
+    ${row("🔒 Local Privacy", c => `${c.scoreCard.selfHostabilityScore}/20`)}
+    ${row("★ Stelle reali", c => `${bar(c.stars, maxStars, '#fbbf24')}${c.stars.toLocaleString()}`)}
+    ${row("⑂ Fork reali", c => c.forks.toLocaleString())}
+    ${row("Linguaggio", c => escapeHtml(c.language))}
+    ${row("Licenza", c => escapeHtml(c.license || "—"))}
+    ${row("📈 Trend (punti reali osservati)", (c) => {
+      const hist = results.find(r => r.repo && r.repo.fullName === c.fullName)?.history || [];
+      return hist.length >= 2 ? `${hist.length} punti · ★${hist[0].stars.toLocaleString()} → ★${hist[hist.length-1].stars.toLocaleString()}` : `<span style="color:var(--text-muted);">dati insufficienti</span>`;
+    })}
+    ${row("🔬 Analisi Codice", (c) => {
+      const ca = results.find(r => r.repo && r.repo.fullName === c.fullName)?.codeAnalysis;
+      if (!ca) return `<span style="color:var(--text-muted);">non ancora analizzata</span>`;
+      return `${ca.totalLinesCounted.toLocaleString()} righe reali · ${(ca.testFileRatio*100).toFixed(0)}% test · ${ca.todoMarkersFound} TODO`;
+    })}
+  </table></div>`;
+
+  body.innerHTML = html;
 }
 
 function setupFilters() {
@@ -638,6 +739,18 @@ function setupModal() {
   btnClose?.addEventListener("click", () => modal.style.display = "none");
   modal?.addEventListener("click", (e) => {
     if (e.target === modal) modal.style.display = "none";
+  });
+
+  const compareModal = document.getElementById("compare-modal");
+  document.getElementById("btn-close-compare-modal")?.addEventListener("click", () => compareModal.style.display = "none");
+  compareModal?.addEventListener("click", (e) => {
+    if (e.target === compareModal) compareModal.style.display = "none";
+  });
+  document.getElementById("btn-open-compare")?.addEventListener("click", openCompareModal);
+  document.getElementById("btn-clear-compare")?.addEventListener("click", () => {
+    compareSelection.clear();
+    updateCompareBar();
+    document.querySelectorAll(".compare-checkbox").forEach(cb => cb.checked = false);
   });
 }
 

@@ -201,3 +201,13 @@ Found while answering a follow-up "cosa manca ancora" (what's still missing) aft
 2. Explicitly stopped the crawler via the real API, then killed and restarted the server again — this time no auto-resume log line appeared and `/api/crawl/status` correctly showed `running: false`, confirming a human's explicit Stop is respected across a restart rather than being silently overridden.
 
 Also added `tests/deep_crawler.test.ts` (3 tests) and a settings round-trip test in `tests/repo_database.test.ts`, both network-free — full suite now 37 tests across 6 files, still green in CI.
+
+## 2026-08-26 (part 5) — side-by-side repo comparison, reusing existing computed data only
+
+Directly serves the original stated goal for the Deep Crawler: "so I know what's worth working on, which repo to take code from rather than another" — real score/category/trend/analysis existed per-repo, but nothing let you put 2-4 repos side by side to decide between them.
+
+**Built:** `GET /api/repos/compare?repos=a/b,c/d` (2-4 repos, comma-separated) — pure composition of data already computed elsewhere: `storedRepoToItem()` was extracted from `/api/repos/list`'s inline mapping so both routes build the identical shape from the same source instead of two copies drifting apart (the exact bug class fixed twice already this session); the compare endpoint adds each repo's real `repoDb.getHistory()` and cached `repoDb.getCodeAnalysis()` alongside it. No new signal is computed, no new GitHub requests are made by this endpoint.
+
+UI: a checkbox on every catalog card (max 4 selected), a floating bar that appears once 2+ are selected, and a comparison modal rendering a real table — score, recommendation, the four real breakdown components, a proportional bar chart of real star counts, forks, language, license, trend point count (honestly "dati insufficienti" if the crawler hasn't observed a change yet), and code-analysis summary if one was archived ("non ancora analizzata" if not).
+
+**Verified live in an actual browser**, not just curl: selected `ChatGPTNextWeb/NextChat` and `Activiti/Activiti`, opened the compare modal, confirmed the real proportional star bar (88,652 vs 10,541), real per-component score breakdown, and — importantly — that NextChat's previously-archived code analysis (11,610 real lines, 18% test ratio, 4 TODOs, from part 4's testing) was correctly read back and displayed, while Activiti honestly showed "not yet analyzed" rather than a fabricated result.
