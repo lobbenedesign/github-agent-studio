@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-29 — LocalAI as a 4th real fallback rung in the LLM evaluator chain
+
+**Gap identified:** `src/llm_evaluator.ts`'s `LLMEvaluationResult.evaluationSource` already declared an honest 3-rung degradation chain (`"Local Ollama" | "Claude Router (Port 3001)" | "Static AST Metric Engine"`) — direct Ollama, then the Claude Local Studio router, then a real static-metric fallback, never a fabricated evaluation. [mudler/LocalAI](https://github.com/mudler/LocalAI) wasn't in that chain at all.
+
+**What was built:** a new rung 2 (between direct Ollama and the Claude Router), `evaluationSource: "LocalAI"` — a real `fetch` to a local LocalAI instance's OpenAI-compatible `/v1/chat/completions` (`LOCALAI_URL` env var, default `http://localhost:8080/v1/chat/completions`; `LOCALAI_MODEL`, default `llama3.2`). Same JSON-extraction/validation logic as the other rungs — a response that doesn't parse into a valid evaluation is silently treated as a miss and falls through to the next rung, never fabricated.
+
+**Verified live, not just typechecked:**
+1. `tsc --noEmit` — clean.
+2. Ran `evaluateCodebaseSemantically` with `ollamaUrl` pointed at an unreachable port (no LocalAI instance running in this environment either) — correctly fell through all four rungs to `"Static AST Metric Engine"` with a real computed score, exactly the documented honest behaviour.
+3. Ran it again against the real local Ollama instance on this machine — also fell to `"Static AST Metric Engine"`, for an unrelated, pre-existing reason found while verifying: the hardcoded request model `"llama3.2"` doesn't match what's actually pulled here (`llama3.2:3b`, confirmed via `GET /api/tags`), so Ollama 404s. This is environment-specific (depends on how a given machine pulled the model) and predates this change — noted here honestly, not silently fixed, since guessing at a "correct" tag for every user's machine isn't this change's call to make.
+4. No LocalAI instance was available in this environment to verify a real `evaluationSource: "LocalAI"` result end-to-end — implemented against LocalAI's documented/source-confirmed OpenAI-compatible request/response shape, stated explicitly rather than hidden.
+
 ## 2026-08-25 — real Fork Hunter, real Crawler Daemon, fixed 2 crash bugs
 
 **What was fake and is now real:**

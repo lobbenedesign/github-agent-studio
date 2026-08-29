@@ -1,7 +1,9 @@
 /**
  * 🧠 Real LLM Semantic Code Evaluator Engine
- * Connects directly to local Ollama (http://localhost:11434), Local Studio router (http://localhost:3001),
- * or OpenAI/Anthropic APIs, performing real LLM prompt evaluation on repository source code.
+ * Connects directly to local Ollama (http://localhost:11434), a local LocalAI
+ * instance (http://localhost:8080, OpenAI-compatible), the Local Studio
+ * router (http://localhost:3001), or OpenAI/Anthropic APIs, performing real
+ * LLM prompt evaluation on repository source code.
  */
 
 export interface LLMEvaluationResult {
@@ -14,11 +16,17 @@ export interface LLMEvaluationResult {
   italianHowItWorks: string;
   italianStrategicVerdict: string;
   comparativeAdvantagesOverCompetitors: string[];
-  evaluationSource: "Local Ollama" | "Claude Router (Port 3001)" | "Static AST Metric Engine";
+  evaluationSource: "Local Ollama" | "LocalAI" | "Claude Router (Port 3001)" | "Static AST Metric Engine";
 }
 
 export class LLMEvaluator {
   private ollamaUrl = "http://localhost:11434/api/generate";
+  // github.com/mudler/LocalAI — OpenAI-compatible, fronts 60+ inference
+  // backends behind one endpoint. LOCALAI_URL env var overrides the default,
+  // and LOCALAI_MODEL picks which model to ask (LocalAI doesn't have a
+  // single "the" model the way a bare Ollama pull does).
+  private localaiUrl = process.env.LOCALAI_URL || "http://localhost:8080/v1/chat/completions";
+  private localaiModel = process.env.LOCALAI_MODEL || "llama3.2";
   private studioUrl = "http://localhost:3001/api/chat";
 
   public async evaluateCodebaseSemantically(
@@ -73,7 +81,38 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questi campi:
       }
     } catch {}
 
-    // 2. Try Claude Local Studio router (Port 3001)
+    // 2. Try a local LocalAI instance (OpenAI-compatible /v1/chat/completions)
+    try {
+      const localaiRes = await fetch(this.localaiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: this.localaiModel,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        }),
+        signal: AbortSignal.timeout(4000)
+      });
+
+      if (localaiRes.ok) {
+        const json = await localaiRes.json();
+        const content = json.choices?.[0]?.message?.content || "";
+        const match = content.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (parsed.algorithmicNovelty) {
+            const total = (parsed.algorithmicNovelty || 20) + (parsed.codeArchitecture || 20) + (parsed.maintainability || 20) + (parsed.selfHostability || 18);
+            return {
+              ...parsed,
+              totalScore: Math.min(100, total),
+              evaluationSource: "LocalAI"
+            };
+          }
+        }
+      }
+    } catch {}
+
+    // 3. Try Claude Local Studio router (Port 3001)
     try {
       const studioRes = await fetch(this.studioUrl, {
         method: "POST",
@@ -103,7 +142,7 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questi campi:
       }
     } catch {}
 
-    // 3. Genuine Static Metric Analysis (Calculates real lines, dependencies count, modularity ratios)
+    // 4. Genuine Static Metric Analysis (Calculates real lines, dependencies count, modularity ratios)
     const lines = readmeText.split("\n").length;
     const depCount = dependencies ? dependencies.split(",").length : 1;
     const isTypescriptOrRust = fileTree.includes(".ts") || fileTree.includes(".rs");
